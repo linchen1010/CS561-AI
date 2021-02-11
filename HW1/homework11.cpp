@@ -100,7 +100,7 @@ void input() {
 }
 
 int BFS() {
-    City start(startPoint.second, startPoint.first, 0, 0); // BFS -- won't consider muddness
+    City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0); // BFS -- won't consider muddness
     vector<vector<bool>> visited(H, vector<bool> (W, false));
     visited[start.row][start.col] = true;
     queue<City> q;
@@ -121,9 +121,22 @@ int BFS() {
             for(int c = -1; c < 2; c++) {
                 if(r == 0 && c == 0) continue;
                 if(couldTraverse(cur.row + r, cur.col + c, visited, inputMap)) {
-                    City tmp(cur.row+r, cur.col+c, 0, cur.dist+1);
-                    q.push(tmp);
-                    parent[to_string(tmp.row)+to_string(tmp.col)] = {cur.row, cur.col};
+                    City tmp(cur.row+r, cur.col+c, inputMap[cur.row+r][cur.col+c], cur.dist+1);
+                    if(tmp.mud < 0) {
+                        if(cur.mud >= 0 && abs(tmp.mud) <= maxRockHeight) { // curent mud positive, but there is a rock toward direction
+                            q.push(tmp);
+                            parent[to_string(tmp.row) + to_string(tmp.col)] = {cur.row, cur.col};
+                            visited[tmp.row][tmp.col] = true;
+                        } else if(cur.mud < 0 && abs(cur.mud - tmp.mud) <= maxRockHeight) { // current mud negative, the difference of height <= maxRockHeight
+                            q.push(tmp);
+                            parent[to_string(tmp.row) + to_string(tmp.col)] = {cur.row, cur.col};
+                            visited[tmp.row][tmp.col] = true;
+                        }
+                    } else {
+                        q.push(tmp);
+                        parent[to_string(tmp.row) + to_string(tmp.col)] = {cur.row, cur.col};
+                        visited[tmp.row][tmp.col] = true;
+                    }
                 }
             }
         }
@@ -136,8 +149,8 @@ int BFS() {
 }
 
 bool couldTraverse(int row, int col, vector<vector<bool>> &visited, vector<vector<int>> mp) {
-    if(row < 0 || row >= H || col < 0 || col >= W || visited[row][col] == true || mp[row][col] < 0) return false;
-    visited[row][col] = true;
+    if(row < 0 || row >= H || col < 0 || col >= W || visited[row][col] == true) return false;
+    //visited[row][col] = true;
     return true;
 }
 
@@ -153,15 +166,19 @@ void createPath(City tmp) {
     string targetKey = to_string(tmp.col) + to_string(tmp.row); // for path order
     City s(0, 0, 0, 0);
     path += to_string(tmp.row) + "," + to_string(tmp.col);
+
     while(parent.count(to_string(tmp.row)+to_string(tmp.col))) {
         s.row = parent[to_string(tmp.row)+to_string(tmp.col)].first; // track to source
         s.col = parent[to_string(tmp.row)+to_string(tmp.col)].second; 
         path += " " + to_string(s.row) + "," + to_string(s.col);
         tmp = s; // track parent
     }
+
     reverse(path.begin(), path.end());
+    
     path += "\n";
     cout << path << endl;
+
     if(s.col == startPoint.first && s.row == startPoint.second) {
         allPath[targetKey] = path;
     }
@@ -172,21 +189,21 @@ void output() {
     // for(auto path : allPath) {
     //     ofile << path;
     // }
-    if(allPath.empty()) {
-        ofile << "FAIL" << endl;
-    } else {
-        vector<string> target;
-        for(auto pos : targetPos) {
-            string targetKey = to_string(pos.first) + to_string(pos.second);
-            target.push_back(targetKey);
-        }
-        for(int i = 0; i < numOfTarget; i++) {
-            if(allPath.count(target[i])) {
-                // cout << printPath[target[i]] << endl;
-                ofile << allPath[target[i]];
-            }
+    
+    vector<string> target;
+    for(auto pos : targetPos) {
+        string targetKey = to_string(pos.first) + to_string(pos.second);
+        target.push_back(targetKey);
+    }
+    for(int i = 0; i < numOfTarget; i++) {
+        if(allPath.count(target[i])) {
+            // cout << printPath[target[i]] << endl;
+            ofile << allPath[target[i]];
+        } else {
+            ofile << "FAIL" << endl;
         }
     }
+    
     ofile.close();
 }
 

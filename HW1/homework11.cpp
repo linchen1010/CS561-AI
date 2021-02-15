@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <unordered_map>
+#include <list>
 
 using namespace::std;
 
@@ -13,13 +14,13 @@ class City {
         int row;
         int col;
         int mud;
-        int dist;
-        City(int x, int y, int m, int d):row(x), col(y), mud(m), dist(d){}
+        int cost;
+        City(int x, int y, int m, int d) : row(x), col(y), mud(m), cost(d){}
 };
 
 struct compare {
     bool operator()(City &a, City &b) {
-        return a.dist > b.dist;
+        return a.cost > b.cost;
     }
 };
 
@@ -28,9 +29,10 @@ void input();
 void createPath(City target);
 void checkInput();
 void output();
-bool couldTraverse(int row, int col, vector<vector<bool>> &visited, vector<vector<int>> mp);
+bool couldTraverse(int row, int col, vector<vector<bool>> &visited);
 bool arriveTarget(int row, int col);
 int BFS();
+int UCS();
 
 ifstream ifile;
 ofstream ofile; 
@@ -53,19 +55,39 @@ unordered_map<string, string> allPath; // store path
 
 int main() {
     input();
+    int result = 0;
     //checkInput();
-    // City a(0,0,0,0);
-    // City b(1,1,1,0);
-    // City c(2,2,1,0);
-    // priority_queue<City, vector<City>, compare> p;
-    // p.push(b);
-    // p.push(c);
-    // p.push(a);
-    int k = BFS();
+    City a(0,0,0,3);
+    City b(1,1,1,5);
+    City c(2,2,1,0);
+    list<City> dq;
+    dq.push_back(a);
+    dq.push_back(b);
+    dq.push_back(c);
+    dq.sort([](City &a, City&b){
+        return a.cost < b.cost;
+    });
+    list<City>::iterator it;
+    for(it = dq.begin(); it != dq.end(); it++) {
+        cout << it->cost << endl;
+    }
+    City tmp = a;
+    a.row = 1;
+    a.col = 1;
+    cout << tmp.row << tmp.col << tmp.mud << tmp.cost << endl;
+    cout << a.row << a.col << a.mud << a.cost << endl;
+    // if(algo == "BFS") {
+    //     result = BFS();
+    // } else if(algo == "UCS") {
+    //     result = UCS();
+    // }
+    //int k = BFS();
+    int u = UCS();
     output();
     return 0;
 }
 
+// load input file to global variable
 void input() {
     // read file content using ifstream
     ifile.open("input.txt");
@@ -120,22 +142,22 @@ int BFS() {
         for(int r = -1; r < 2; r++) {
             for(int c = -1; c < 2; c++) {
                 if(r == 0 && c == 0) continue;
-                if(couldTraverse(cur.row + r, cur.col + c, visited, inputMap)) {
-                    City tmp(cur.row+r, cur.col+c, inputMap[cur.row+r][cur.col+c], cur.dist+1);
-                    if(tmp.mud < 0) {
-                        if(cur.mud >= 0 && abs(tmp.mud) <= maxRockHeight) { // curent mud positive, but there is a rock toward direction
-                            q.push(tmp);
-                            parent[to_string(tmp.row) + to_string(tmp.col)] = {cur.row, cur.col};
-                            visited[tmp.row][tmp.col] = true;
-                        } else if(cur.mud < 0 && abs(cur.mud - tmp.mud) <= maxRockHeight) { // current mud negative, the difference of height <= maxRockHeight
-                            q.push(tmp);
-                            parent[to_string(tmp.row) + to_string(tmp.col)] = {cur.row, cur.col};
-                            visited[tmp.row][tmp.col] = true;
+                if(couldTraverse(cur.row + r, cur.col + c, visited)) {
+                    City child(cur.row + r, cur.col + c, inputMap[cur.row + r][cur.col + c], 0);
+                    if(child.mud < 0) {
+                        if(cur.mud >= 0 && abs(child.mud) <= maxRockHeight) { // curent mud positive, but there is a rock toward direction
+                            q.push(child);
+                            parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                            visited[child.row][child.col] = true;
+                        } else if(cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) { // current mud negative, the difference of height <= maxRockHeight
+                            q.push(child);
+                            parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                            visited[child.row][child.col] = true;
                         }
                     } else {
-                        q.push(tmp);
-                        parent[to_string(tmp.row) + to_string(tmp.col)] = {cur.row, cur.col};
-                        visited[tmp.row][tmp.col] = true;
+                        q.push(child);
+                        parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                        visited[child.row][child.col] = true;
                     }
                 }
             }
@@ -143,12 +165,79 @@ int BFS() {
         
         //break;
     }
-    cout << targetFound << endl;
+    cout << targetFound << endl; 
     if(targetFound == 0) return -1;
     return 1;
 }
 
-bool couldTraverse(int row, int col, vector<vector<bool>> &visited, vector<vector<int>> mp) {
+int UCS() {
+    City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0); // BFS -- won't consider muddness
+    vector<vector<bool>> visited(H, vector<bool> (W, false));
+    vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,INT_MAX)));
+    optCost[start.row][start.col].cost = 0;
+    priority_queue<City, vector<City>, compare> pq;
+    pq.push(start);
+    int targetFound = 0;
+    int n = 0;
+    while(!pq.empty()) {
+        City cur = pq.top();
+        pq.pop();
+        if(arriveTarget(cur.col, cur.row)) {
+            targetFound++;
+            //cout << "target found" << endl;
+            //cout << cur.row << " " << cur.col << endl;
+            createPath(cur);
+        }
+        // travese child
+        if(visited[cur.row][cur.col]) continue;
+        for(int r = -1; r < 2; r++) {
+            for(int c = -1; c < 2; c++) {
+                if(r == 0 && c == 0) continue;
+                //if(visited[cur.row][cur.col]) continue;
+                if(couldTraverse(cur.row + r, cur.col + c, visited)) {
+                    City child(cur.row + r, cur.col + c, inputMap[cur.row + r][cur.col + c], cur.cost);
+                    if(r == 0 || c == 0) { // 4-direction
+                        child.cost += 10;
+                    } else {               // diagonal
+                        child.cost += 14;
+                    }
+                    if(child.mud < 0) { // Rock
+                        // curent mud positive, but there is a rock toward direction
+                        // current mud negative, the difference of height <= maxRockHeight
+                        if( (cur.mud >= 0 && abs(child.mud) <= maxRockHeight) || (cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) ) { 
+                            if(child.cost < optCost[child.row][child.col].cost) {
+                                optCost[child.row][child.col] = child;
+                                parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                            }
+                            else child = optCost[child.row][child.col];
+                            pq.push(child);
+                        } 
+                    } else { // mud
+                        if(child.cost < optCost[child.row][child.col].cost){
+                            optCost[child.row][child.col] = child;
+                            parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                        } 
+                        else child = optCost[child.row][child.col];
+                        pq.push(child);
+                        //parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                    }
+                } 
+            }
+        }
+        visited[cur.row][cur.col] = true;
+    }
+    // for(auto r : optCost) {
+    //     for(auto c : r) {
+    //         cout << c.cost << " ";
+    //     }
+    //     cout << "\n";
+    // }
+    return 1;
+}
+
+
+
+bool couldTraverse(int row, int col, vector<vector<bool>> &visited) {
     if(row < 0 || row >= H || col < 0 || col >= W || visited[row][col] == true) return false;
     //visited[row][col] = true;
     return true;
@@ -175,7 +264,7 @@ void createPath(City tmp) {
     }
 
     reverse(path.begin(), path.end());
-    
+
     path += "\n";
     cout << path << endl;
 

@@ -50,6 +50,8 @@ int numOfTarget = 0;
 vector<pair<int, int>> targetPos;
 vector<vector<int>> inputMap;
 //////////////////////////////////////
+
+/* path variable */
 unordered_map<string, pair<int, int>> parent; // store parent of each node
 unordered_map<string, string> allPath; // store path
 
@@ -407,12 +409,12 @@ vector<vector<double>> pathCost() {
                                 if(child.cost < optCost[child.row][child.col].cost) optCost[child.row][child.col] = child;
                                 else child = optCost[child.row][child.col];
                                 pq.push(child);
-                            } else if(cur.mud < 0 && abs(cur.mud) <= maxRockHeight){
-                                child.cost += child.mud + abs(cur.mud);
-                                if(child.cost < optCost[child.row][child.col].cost) optCost[child.row][child.col] = child;
-                                else child = optCost[child.row][child.col];
-                                pq.push(child);
-                            }
+                        } else if(cur.mud < 0 && abs(cur.mud) <= maxRockHeight){
+                            child.cost += child.mud + abs(cur.mud);
+                            if(child.cost < optCost[child.row][child.col].cost) optCost[child.row][child.col] = child;
+                            else child = optCost[child.row][child.col];
+                            pq.push(child);
+                        }
                     }
                 } 
             }

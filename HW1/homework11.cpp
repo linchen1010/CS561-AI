@@ -402,13 +402,17 @@ vector<vector<double>> pathCost() {
                             pq.push(child);
                         }
                     } else { // child mud
-                        if(cur.mud >= 0 || (cur.mud < 0 && abs(cur.mud) <= maxRockHeight) ) {
-                            if(child.cost < optCost[child.row][child.col].cost){
-                                optCost[child.row][child.col] = child;
-                            } 
-                            else child = optCost[child.row][child.col];
-                            pq.push(child);
-                        } 
+                        if(cur.mud >= 0) {
+                                child.cost += child.mud;
+                                if(child.cost < optCost[child.row][child.col].cost) optCost[child.row][child.col] = child;
+                                else child = optCost[child.row][child.col];
+                                pq.push(child);
+                            } else if(cur.mud < 0 && abs(cur.mud) <= maxRockHeight){
+                                child.cost += child.mud + abs(cur.mud);
+                                if(child.cost < optCost[child.row][child.col].cost) optCost[child.row][child.col] = child;
+                                else child = optCost[child.row][child.col];
+                                pq.push(child);
+                            }
                     }
                 } 
             }

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <list>
+#include <cmath>
 
 using namespace::std;
 
@@ -14,8 +15,8 @@ class City {
         int row;
         int col;
         int mud;
-        int cost;
-        City(int x, int y, int m, int d) : row(x), col(y), mud(m), cost(d){}
+        double cost;
+        City(int x, int y, int m, double d) : row(x), col(y), mud(m), cost(d){}
 };
 
 struct compare {
@@ -31,8 +32,11 @@ void checkInput();
 void output();
 bool couldTraverse(int row, int col, vector<vector<bool>> &visited);
 bool arriveTarget(int row, int col);
-int BFS();
-int UCS();
+double distance(City a, City b);
+void BFS();
+void UCS();
+void Astar();
+vector<vector<double>> pathCost();
 
 ifstream ifile;
 ofstream ofile; 
@@ -45,44 +49,21 @@ int maxRockHeight = 0;
 int numOfTarget = 0;
 vector<pair<int, int>> targetPos;
 vector<vector<int>> inputMap;
-
-
-/* ****************** */
-int foundPath = 0;
+//////////////////////////////////////
 unordered_map<string, pair<int, int>> parent; // store parent of each node
 unordered_map<string, string> allPath; // store path
 
 
 int main() {
     input();
-    int result = 0;
     //checkInput();
-    City a(0,0,0,3);
-    City b(1,1,1,5);
-    City c(2,2,1,0);
-    list<City> dq;
-    dq.push_back(a);
-    dq.push_back(b);
-    dq.push_back(c);
-    dq.sort([](City &a, City&b){
-        return a.cost < b.cost;
-    });
-    list<City>::iterator it;
-    for(it = dq.begin(); it != dq.end(); it++) {
-        cout << it->cost << endl;
+    if(algo == "BFS") {
+        BFS();
+    } else if(algo == "UCS") {
+        UCS();
+    } else if(algo == "A*") {
+        Astar();
     }
-    City tmp = a;
-    a.row = 1;
-    a.col = 1;
-    cout << tmp.row << tmp.col << tmp.mud << tmp.cost << endl;
-    cout << a.row << a.col << a.mud << a.cost << endl;
-    // if(algo == "BFS") {
-    //     result = BFS();
-    // } else if(algo == "UCS") {
-    //     result = UCS();
-    // }
-    //int k = BFS();
-    int u = UCS();
     output();
     return 0;
 }
@@ -121,7 +102,7 @@ void input() {
     
 }
 
-int BFS() {
+void BFS() {
     City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0); // BFS -- won't consider muddness
     vector<vector<bool>> visited(H, vector<bool> (W, false));
     visited[start.row][start.col] = true;
@@ -134,8 +115,8 @@ int BFS() {
         q.pop();
         if(arriveTarget(cur.col, cur.row)) {
             targetFound++;
-            cout << "target found" << endl;
-            cout << cur.row << " " << cur.col << endl;
+            //cout << "target found" << endl;
+            //cout << cur.row << " " << cur.col << endl;
             createPath(cur);
         }
         // traverse 8 direction
@@ -144,33 +125,28 @@ int BFS() {
                 if(r == 0 && c == 0) continue;
                 if(couldTraverse(cur.row + r, cur.col + c, visited)) {
                     City child(cur.row + r, cur.col + c, inputMap[cur.row + r][cur.col + c], 0);
-                    if(child.mud < 0) {
-                        if(cur.mud >= 0 && abs(child.mud) <= maxRockHeight) { // curent mud positive, but there is a rock toward direction
+                    if(child.mud < 0) { // child rock
+                        // curent mud positive, but there is a rock toward direction or
+                        // current mud negative, the difference of height <= maxRockHeight
+                        if( (cur.mud >= 0 && abs(child.mud) <= maxRockHeight) || (cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) ) {
                             q.push(child);
                             parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
                             visited[child.row][child.col] = true;
-                        } else if(cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) { // current mud negative, the difference of height <= maxRockHeight
+                        } 
+                    } else { // child mud
+                        if(cur.mud >= 0 || (cur.mud < 0 && abs(cur.mud) <= maxRockHeight)) { // current mud || curent rock & child mud
                             q.push(child);
                             parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
                             visited[child.row][child.col] = true;
-                        }
-                    } else {
-                        q.push(child);
-                        parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
-                        visited[child.row][child.col] = true;
+                        } 
                     }
                 }
             }
         }
-        
-        //break;
     }
-    cout << targetFound << endl; 
-    if(targetFound == 0) return -1;
-    return 1;
 }
 
-int UCS() {
+void UCS() {
     City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0); // BFS -- won't consider muddness
     vector<vector<bool>> visited(H, vector<bool> (W, false));
     vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,INT_MAX)));
@@ -184,8 +160,6 @@ int UCS() {
         pq.pop();
         if(arriveTarget(cur.col, cur.row)) {
             targetFound++;
-            //cout << "target found" << endl;
-            //cout << cur.row << " " << cur.col << endl;
             createPath(cur);
         }
         // travese child
@@ -201,8 +175,8 @@ int UCS() {
                     } else {               // diagonal
                         child.cost += 14;
                     }
-                    if(child.mud < 0) { // Rock
-                        // curent mud positive, but there is a rock toward direction
+                    if(child.mud < 0) { // child Rock
+                        // curent mud positive, but there is a rock toward direction or
                         // current mud negative, the difference of height <= maxRockHeight
                         if( (cur.mud >= 0 && abs(child.mud) <= maxRockHeight) || (cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) ) { 
                             if(child.cost < optCost[child.row][child.col].cost) {
@@ -212,30 +186,105 @@ int UCS() {
                             else child = optCost[child.row][child.col];
                             pq.push(child);
                         } 
-                    } else { // mud
-                        if(child.cost < optCost[child.row][child.col].cost){
-                            optCost[child.row][child.col] = child;
-                            parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                    } else { // child mud
+                        if(cur.mud >= 0 || (cur.mud < 0 && abs(cur.mud) <= maxRockHeight) ) {
+                            if(child.cost < optCost[child.row][child.col].cost){
+                                optCost[child.row][child.col] = child;
+                                parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                            } 
+                            else child = optCost[child.row][child.col];
+                            pq.push(child);
                         } 
-                        else child = optCost[child.row][child.col];
-                        pq.push(child);
-                        //parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
                     }
                 } 
             }
         }
         visited[cur.row][cur.col] = true;
     }
-    // for(auto r : optCost) {
-    //     for(auto c : r) {
-    //         cout << c.cost << " ";
-    //     }
-    //     cout << "\n";
-    // }
-    return 1;
 }
 
+void Astar() {
+    City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0);
+    int targetFound = 0;
+    vector<pair<int, int>> target;
+    int n = 0;
+    vector<vector<double>> pCost = pathCost();
+    for(auto target: targetPos) {
+        City goal(target.second, target.first, 0, 0);
+        vector<vector<bool>> visited(H, vector<bool> (W, false));
+        vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,INT_MAX)));
+        optCost[start.row][start.col].cost = 0;
+        priority_queue<City, vector<City>, compare> pq;
+        pq.push(start);
 
+        parent.clear(); // clean parent path for next iteration
+
+        while(!pq.empty()) {
+            City cur = pq.top();
+            pq.pop();
+            if(cur.row == goal.row && cur.col == goal.col) {
+                targetFound++;
+                createPath(cur);
+            }
+            // travese child
+            if(visited[cur.row][cur.col]) continue;
+            for(int r = -1; r < 2; r++) {
+                for(int c = -1; c < 2; c++) {
+                    if(r == 0 && c == 0) continue;
+                    //if(visited[cur.row][cur.col]) continue;
+                    if(couldTraverse(cur.row + r, cur.col + c, visited)) {
+                        City child(cur.row + r, cur.col + c, inputMap[cur.row + r][cur.col + c], pCost[cur.row][cur.col]);
+                        if(r == 0 || c == 0) { // 4-direction
+                            child.cost += 10;
+                        } else {               // diagonal
+                            child.cost += 14;
+                        }
+                        if(child.mud < 0) { // Rock
+                            // curent mud positive, but there is a rock toward direction
+                            // current mud negative, the difference of height <= maxRockHeight
+                            if(cur.mud >= 0 && abs(child.mud) <= maxRockHeight) { 
+                                child.cost += abs(child.mud) + distance(child, goal);
+                                if(child.cost < optCost[child.row][child.col].cost) {
+                                    optCost[child.row][child.col] = child;
+                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                }
+                                else child = optCost[child.row][child.col];
+                                pq.push(child);
+                            } else if(cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) {
+                                child.cost += abs(cur.mud - child.mud) + distance(child, goal);
+                                if(child.cost < optCost[child.row][child.col].cost) {
+                                    optCost[child.row][child.col] = child;
+                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                }
+                                else child = optCost[child.row][child.col];
+                                pq.push(child);
+                            }
+                        } else { // mud
+                            if(cur.mud >= 0) {
+                                child.cost += child.mud + distance(child, goal);
+                                if(child.cost < optCost[child.row][child.col].cost){
+                                    optCost[child.row][child.col] = child;
+                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                } 
+                                else child = optCost[child.row][child.col];
+                                pq.push(child);
+                            } else if(cur.mud < 0 && abs(cur.mud) <= maxRockHeight){
+                                child.cost += child.mud + abs(cur.mud) + distance(child, goal);
+                                if(child.cost < optCost[child.row][child.col].cost){
+                                    optCost[child.row][child.col] = child;
+                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                } 
+                                else child = optCost[child.row][child.col];
+                                pq.push(child);
+                            }
+                        }
+                    } 
+                }
+            }
+            visited[cur.row][cur.col] = true;
+        }
+    }
+}
 
 bool couldTraverse(int row, int col, vector<vector<bool>> &visited) {
     if(row < 0 || row >= H || col < 0 || col >= W || visited[row][col] == true) return false;
@@ -266,7 +315,7 @@ void createPath(City tmp) {
     reverse(path.begin(), path.end());
 
     path += "\n";
-    cout << path << endl;
+    //cout << path << endl;
 
     if(s.col == startPoint.first && s.row == startPoint.second) {
         allPath[targetKey] = path;
@@ -275,9 +324,6 @@ void createPath(City tmp) {
 
 void output() {
     ofile.open("output.txt");
-    // for(auto path : allPath) {
-    //     ofile << path;
-    // }
     
     vector<string> target;
     for(auto pos : targetPos) {
@@ -286,7 +332,6 @@ void output() {
     }
     for(int i = 0; i < numOfTarget; i++) {
         if(allPath.count(target[i])) {
-            // cout << printPath[target[i]] << endl;
             ofile << allPath[target[i]];
         } else {
             ofile << "FAIL" << endl;
@@ -311,4 +356,71 @@ void checkInput() {
         }
         cout << "\n";
     }
+}
+
+double distance(City a, City b) {
+    return sqrt(pow(a.row-b.row, 2) + pow(a.col-b.col, 2));
+}
+
+vector<vector<double>> pathCost() {
+    City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0); // BFS -- won't consider muddness
+    vector<vector<bool>> visited(H, vector<bool> (W, false));
+    vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,INT_MAX)));
+    vector<vector<double>> pCost(H, vector<double> (W, 0));
+    optCost[start.row][start.col].cost = 0;
+    priority_queue<City, vector<City>, compare> pq;
+    pq.push(start);
+    int targetFound = 0;
+    int n = 0;
+    while(!pq.empty()) {
+        City cur = pq.top();
+        pq.pop();
+        if(visited[cur.row][cur.col]) continue;
+        for(int r = -1; r < 2; r++) {
+            for(int c = -1; c < 2; c++) {
+                if(r == 0 && c == 0) continue;
+                //if(visited[cur.row][cur.col]) continue;
+                if(couldTraverse(cur.row + r, cur.col + c, visited)) {
+                    City child(cur.row + r, cur.col + c, inputMap[cur.row + r][cur.col + c], cur.cost);
+                    if(r == 0 || c == 0) { // 4-direction
+                        child.cost += 10;
+                    } else {               // diagonal
+                        child.cost += 14;
+                    }
+                    if(child.mud < 0) { // Rock
+                        // curent mud positive, but there is a rock toward direction
+                        // current mud negative, the difference of height <= maxRockHeight
+                        if(cur.mud >= 0 && abs(child.mud) <= maxRockHeight) { 
+                            child.cost += abs(child.mud);
+                            if(child.cost < optCost[child.row][child.col].cost) optCost[child.row][child.col] = child;
+                            else child = optCost[child.row][child.col];
+                            pq.push(child);
+                        } else if(cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) {
+                            child.cost += abs(cur.mud - child.mud);
+                            if(child.cost < optCost[child.row][child.col].cost) optCost[child.row][child.col] = child;
+                            else child = optCost[child.row][child.col];
+                            pq.push(child);
+                        }
+                    } else { // child mud
+                        if(cur.mud >= 0 || (cur.mud < 0 && abs(cur.mud) <= maxRockHeight) ) {
+                            if(child.cost < optCost[child.row][child.col].cost){
+                                optCost[child.row][child.col] = child;
+                            } 
+                            else child = optCost[child.row][child.col];
+                            pq.push(child);
+                        } 
+                    }
+                } 
+            }
+        }
+        visited[cur.row][cur.col] = true;
+    }
+
+    for(int i = 0; i < H; i++) {
+        for(int j = 0; j < W; j++) {
+            pCost[i][j] = optCost[i][j].cost;
+        }
+    }
+    
+    return pCost;
 }

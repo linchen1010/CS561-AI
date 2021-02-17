@@ -7,6 +7,9 @@
 #include <unordered_map>
 #include <list>
 #include <cmath>
+#include <stack>
+
+#define MAX 0x7FFFFFFF
 
 using namespace::std;
 
@@ -151,7 +154,7 @@ void BFS() {
 void UCS() {
     City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0); // BFS -- won't consider muddness
     vector<vector<bool>> visited(H, vector<bool> (W, false));
-    vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,INT_MAX)));
+    vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,MAX)));
     optCost[start.row][start.col].cost = 0;
     priority_queue<City, vector<City>, compare> pq;
     pq.push(start);
@@ -214,7 +217,7 @@ void Astar() {
     for(auto target: targetPos) {
         City goal(target.second, target.first, 0, 0);
         vector<vector<bool>> visited(H, vector<bool> (W, false));
-        vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,INT_MAX)));
+        vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,MAX)));
         optCost[start.row][start.col].cost = 0;
         priority_queue<City, vector<City>, compare> pq;
         pq.push(start);
@@ -305,19 +308,23 @@ void createPath(City tmp) {
     string path = "";
     string targetKey = to_string(tmp.col) + to_string(tmp.row); // for path order
     City s(0, 0, 0, 0);
-    path += to_string(tmp.row) + "," + to_string(tmp.col);
+    stack<string> pathStack;
+    pathStack.push(to_string(tmp.col) + "," + to_string(tmp.row));
 
     while(parent.count(to_string(tmp.row)+to_string(tmp.col))) {
         s.row = parent[to_string(tmp.row)+to_string(tmp.col)].first; // track to source
         s.col = parent[to_string(tmp.row)+to_string(tmp.col)].second; 
-        path += " " + to_string(s.row) + "," + to_string(s.col);
+        pathStack.push(to_string(s.col) + "," + to_string(s.row));
         tmp = s; // track parent
     }
 
-    reverse(path.begin(), path.end());
+    while(!pathStack.empty()) {
+        path += pathStack.top();
+        pathStack.pop();
+        if(!pathStack.empty()) path += " ";
+    }
 
     path += "\n";
-    //cout << path << endl;
 
     if(s.col == startPoint.first && s.row == startPoint.second) {
         allPath[targetKey] = path;
@@ -367,7 +374,7 @@ double distance(City a, City b) {
 vector<vector<double>> pathCost() {
     City start(startPoint.second, startPoint.first, inputMap[startPoint.second][startPoint.first], 0); // BFS -- won't consider muddness
     vector<vector<bool>> visited(H, vector<bool> (W, false));
-    vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,INT_MAX)));
+    vector<vector<City>> optCost(H, vector<City> (W, City(-1,-1,0,MAX)));
     vector<vector<double>> pCost(H, vector<double> (W, 0));
     optCost[start.row][start.col].cost = 0;
     priority_queue<City, vector<City>, compare> pq;
@@ -427,6 +434,5 @@ vector<vector<double>> pathCost() {
             pCost[i][j] = optCost[i][j].cost;
         }
     }
-    
     return pCost;
 }

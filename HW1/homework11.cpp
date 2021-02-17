@@ -104,7 +104,7 @@ void input() {
             ifile >> inputMap[row][col];
         }
     }
-    
+    ifile.close();
 }
 
 void BFS() {

@@ -135,13 +135,13 @@ void BFS() {
                         // current mud negative, the difference of height <= maxRockHeight
                         if( (cur.mud >= 0 && abs(child.mud) <= maxRockHeight) || (cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) ) {
                             q.push(child);
-                            parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                            parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                             visited[child.row][child.col] = true;
                         } 
                     } else { // child mud
                         if(cur.mud >= 0 || (cur.mud < 0 && abs(cur.mud) <= maxRockHeight)) { // current mud || curent rock & child mud
                             q.push(child);
-                            parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                            parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                             visited[child.row][child.col] = true;
                         } 
                     }
@@ -186,7 +186,7 @@ void UCS() {
                         if( (cur.mud >= 0 && abs(child.mud) <= maxRockHeight) || (cur.mud < 0 && abs(cur.mud - child.mud) <= maxRockHeight) ) { 
                             if(child.cost < optCost[child.row][child.col].cost) {
                                 optCost[child.row][child.col] = child;
-                                parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                             }
                             else child = optCost[child.row][child.col];
                             pq.push(child);
@@ -195,7 +195,7 @@ void UCS() {
                         if(cur.mud >= 0 || (cur.mud < 0 && abs(cur.mud) <= maxRockHeight) ) {
                             if(child.cost < optCost[child.row][child.col].cost){
                                 optCost[child.row][child.col] = child;
-                                parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                             } 
                             else child = optCost[child.row][child.col];
                             pq.push(child);
@@ -251,7 +251,7 @@ void Astar() {
                                 child.cost += abs(child.mud) + distance(child, goal);
                                 if(child.cost < optCost[child.row][child.col].cost) {
                                     optCost[child.row][child.col] = child;
-                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                    parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                                 }
                                 else child = optCost[child.row][child.col];
                                 pq.push(child);
@@ -259,7 +259,7 @@ void Astar() {
                                 child.cost += abs(cur.mud - child.mud) + distance(child, goal);
                                 if(child.cost < optCost[child.row][child.col].cost) {
                                     optCost[child.row][child.col] = child;
-                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                    parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                                 }
                                 else child = optCost[child.row][child.col];
                                 pq.push(child);
@@ -269,7 +269,7 @@ void Astar() {
                                 child.cost += child.mud + distance(child, goal);
                                 if(child.cost < optCost[child.row][child.col].cost){
                                     optCost[child.row][child.col] = child;
-                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                    parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                                 } 
                                 else child = optCost[child.row][child.col];
                                 pq.push(child);
@@ -277,7 +277,7 @@ void Astar() {
                                 child.cost += child.mud + abs(cur.mud) + distance(child, goal);
                                 if(child.cost < optCost[child.row][child.col].cost){
                                     optCost[child.row][child.col] = child;
-                                    parent[to_string(child.row) + to_string(child.col)] = {cur.row, cur.col};
+                                    parent[to_string(child.row) + "," + to_string(child.col)] = {cur.row, cur.col};
                                 } 
                                 else child = optCost[child.row][child.col];
                                 pq.push(child);
@@ -311,9 +311,9 @@ void createPath(City tmp) {
     stack<string> pathStack;
     pathStack.push(to_string(tmp.col) + "," + to_string(tmp.row));
 
-    while(parent.count(to_string(tmp.row)+to_string(tmp.col))) {
-        s.row = parent[to_string(tmp.row)+to_string(tmp.col)].first; // track to source
-        s.col = parent[to_string(tmp.row)+to_string(tmp.col)].second; 
+    while(parent.count(to_string(tmp.row)+ "," +to_string(tmp.col))) {
+        s.row = parent[to_string(tmp.row)+ "," + to_string(tmp.col)].first; // track to source
+        s.col = parent[to_string(tmp.row)+ "," + to_string(tmp.col)].second; 
         pathStack.push(to_string(s.col) + "," + to_string(s.row));
         tmp = s; // track parent
     }

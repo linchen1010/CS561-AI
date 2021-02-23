@@ -368,7 +368,7 @@ void checkInput() {
 }
 
 double distance(City a, City b) {
-    return sqrt(pow(a.row-b.row, 2) + pow(a.col-b.col, 2));
+    return sqrt(pow(a.row-b.row, 2) + pow(a.col-b.col, 2)) * 10;
 }
 
 vector<vector<double>> pathCost() {

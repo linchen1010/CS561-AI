@@ -32,10 +32,10 @@ class Board {
         unordered_map<string, vector<Piece> > get_valid_moves(Piece piece); // get valid move via traverse in 4 direction
 
 
-        void traverse_left_up(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
-        void traverse_right_up(int start_row, int stop_row, char color, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
-        void traverse_left_down(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
-        void traverse_right_down(int start_row, int stop_row, char color, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
+        void traverse_left_up(int start_row, int stop_row, Piece piece, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
+        void traverse_right_up(int start_row, int stop_row, Piece piece, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
+        void traverse_left_down(int start_row, int stop_row, Piece piece, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
+        void traverse_right_down(int start_row, int stop_row, Piece piece, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
         //
         
         void init_board(); // init board informa tion
@@ -120,21 +120,23 @@ unordered_map<string, vector<Piece> > Board::get_valid_moves(Piece piece) {
     int left = piece.col - 1;
     int right = piece.col + 1;
     int row = piece.row;
-
+    //if(piece.isKing) cout << "king" << endl;
     if(piece.color == 'b'  || piece.isKing) {
-        traverse_left_down(row + 1, min(row + 3, ROWS), piece.color, left, skipped, moves);
-        traverse_right_down(row + 1, min(row + 3, ROWS), piece.color, right, skipped, moves);
+        traverse_left_down(row + 1, min(row + 3, ROWS), piece, left, skipped, moves);
+        traverse_right_down(row + 1, min(row + 3, ROWS), piece, right, skipped, moves);
     }
     if(piece.color == 'w' || piece.isKing) {
-        traverse_left_up(row - 1, max(row - 3, -1), piece.color, left, skipped, moves);
-        traverse_right_up(row - 1, max(row - 3, -1), piece.color, right, skipped, moves);
+        traverse_left_up(row - 1, max(row - 3, -1), piece, left, skipped, moves);
+        traverse_right_up(row - 1, max(row - 3, -1), piece, right, skipped, moves);
     }
 
     return moves;
 }
 
-void Board::traverse_left_up(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
+void Board::traverse_left_up(int start_row, int stop_row, Piece piece, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
     vector<Piece> last;
+    //if(!skipped.empty()) this->remove(skipped);
+    //cout << start_row << "," << left << "--" << stop_row << endl;
     for(int row = start_row; row > stop_row; row--) {
         if(left < 0) break; // bundary check
 
@@ -144,31 +146,46 @@ void Board::traverse_left_up(int start_row, int stop_row, char color, int left, 
             if (!skipped.empty() && last.empty()) {
                 break;
             } else if(!skipped.empty()) {
-                vector<Piece> tmp = last;
-                tmp.insert(tmp.end(), skipped.begin(), skipped.end());
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = tmp;
+                last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
+                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             } else {
                 moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             }
             if(!last.empty()) {
-                int row_stop = max(row-3, 0);  
-                traverse_left_up(row-1, row_stop, color, left-1, last, moves);
-                traverse_right_up(row-1, row_stop, color, left+1, last, moves);
+                if(piece.isKing) {
+                    //cout << "111" << endl;
+                    int row_stop_up = max(row - 3, 0);
+                    int row_stop_down = min(row + 3, ROWS);
+                    traverse_left_up(row-1, row_stop_up, piece, left-1, last, moves);
+                    traverse_right_up(row-1, row_stop_up, piece, left+1, last, moves);
+                    traverse_left_down(row+1, row_stop_down, piece, left-1, last, moves);
+                    traverse_right_down(row+1, row_stop_down, piece, left+1, last, moves);
+                }
+                else {
+                    int row_stop = max(row-3, 0);
+                    traverse_left_up(row-1, row_stop, piece, left-1, last, moves);
+                    traverse_right_up(row-1, row_stop, piece, left+1, last, moves);
+                }
             }
             break;
         }
-        else if(curr_piece.color == color) {
+        else if(curr_piece.color == piece.color) {
             break;
         }
         else {
+            // if(!skipped.empty()) this->remove(skipped);
+            cout << curr_piece.row << curr_piece.col << curr_piece.color << endl;
             last.push_back(curr_piece);
         }
         left --; 
     }
 }
 
-void Board::traverse_right_up(int start_row, int stop_row, char color, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
+void Board::traverse_right_up(int start_row, int stop_row, Piece piece, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
     vector<Piece> last;
+    // cout << start_row << "," << right << "--" << stop_row << endl;
+    //if(!skipped.empty()) this->remove(skipped);
+    if(start_row < 0 || start_row >= ROWS || right < 0 || right >= COLS) return;
     for(int row = start_row; row > stop_row; row--) {
         if(right >= COLS) break; // bundary check
         Piece curr_piece = this->get_piece(row,right);
@@ -176,28 +193,44 @@ void Board::traverse_right_up(int start_row, int stop_row, char color, int right
             if (!skipped.empty() && last.empty()) {
                 break;
             } else if(!skipped.empty()) {
-                vector<Piece> tmp = last;
-                tmp.insert(tmp.end(), skipped.begin(), skipped.end());
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = tmp;
+                last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
+                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             } else {
                 moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             }
             if(!last.empty()) { // handle skip
-                int row_stop = max(row-3, 0);
-                traverse_left_up(row-1, row_stop, color, right-1, last, moves);
-                traverse_right_up(row-1, row_stop, color, right+1, last, moves);
+                if(piece.isKing) {
+                    //cout << "222" << endl;
+                    int row_stop_up = max(row - 3, 0);
+                    int row_stop_down = min(row + 3, ROWS);
+                    traverse_left_up(row-1, row_stop_up, piece, right-1, last, moves);
+                    traverse_right_up(row-1, row_stop_up, piece, right+1, last, moves);
+                    traverse_left_down(row+1, row_stop_down, piece, right-1, last, moves);
+                    traverse_right_down(row+1, row_stop_down, piece, right+1, last, moves);
+                }
+                else {
+                    int row_stop = max(row-3, 0);
+                    traverse_left_up(row-1, row_stop, piece, right-1, last, moves);
+                    traverse_right_up(row-1, row_stop, piece, right+1, last, moves);
+                }
             }
             break;
         }
-        else if(curr_piece.color == color) break;
-        else last.push_back(curr_piece);
+        else if(curr_piece.color == piece.color) break;
+        else {
+            //if(!skipped.empty()) this->remove(skipped);
+            last.push_back(curr_piece);
+        }
 
         right ++;
     }
 }
 
-void Board::traverse_left_down(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
+void Board::traverse_left_down(int start_row, int stop_row, Piece piece, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
     vector<Piece> last;
+    // cout << start_row << "," << left << "-#" << stop_row << endl;
+    //if(!skipped.empty()) this->remove(skipped);
+    if(start_row < 0 || start_row > ROWS || left < 0 || left >= COLS) return;
     for(int row = start_row; row < stop_row; row++) {
         if(left < 0) break; // bundary check
         Piece curr_piece = this->get_piece(row,left);
@@ -206,31 +239,44 @@ void Board::traverse_left_down(int start_row, int stop_row, char color, int left
             if (!skipped.empty() && last.empty()) {
                 break;
             } else if(!skipped.empty()) {
-                vector<Piece> tmp = last;
-                tmp.insert(tmp.end(), skipped.begin(), skipped.end());
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = tmp;
+                last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
+                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             } else {
                 moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             }
             if(!last.empty()) {
-                int row_stop = min(row+3, ROWS);  
-                traverse_left_down(row+1, row_stop, color, left-1, last, moves);
-                traverse_right_down(row+1, row_stop, color, left+1, last, moves);
+                if(piece.isKing) {
+                    cout << "333" << endl;
+                    int row_stop_up = max(row - 3, 0);
+                    int row_stop_down = min(row + 3, ROWS);
+                    traverse_left_up(row-1, row_stop_up, piece, left-1, last, moves);
+                    traverse_right_up(row-1, row_stop_up, piece, left+1, last, moves);
+                    traverse_left_down(row+1, row_stop_down, piece, left-1, last, moves);
+                    traverse_right_down(row+1, row_stop_down, piece, left+1, last, moves);
+                }
+                else {
+                    int row_stop = min(row+3, ROWS);  
+                    traverse_left_down(row+1, row_stop, piece, left-1, last, moves);
+                    traverse_right_down(row+1, row_stop, piece, left+1, last, moves);
+                }
             }
             break;
         }
-        else if(curr_piece.color == color) {
+        else if(curr_piece.color == piece.color) {
             break;
         }
         else {
             last.push_back(curr_piece);
+            //if(!skipped.empty()) this->remove(skipped);
         }
         left --; 
     }
 }
 
-void Board::traverse_right_down(int start_row, int stop_row, char color, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
+void Board::traverse_right_down(int start_row, int stop_row, Piece piece, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
     vector<Piece> last;
+    // cout << start_row << "," << right << "-#" << stop_row << endl;
+    if(start_row < 0 || start_row >= ROWS || right < 0 || right >= COLS) return;
     for(int row = start_row; row < stop_row; row++) {
         if(right >= COLS) break; // bundary check
         Piece curr_piece = this->get_piece(row,right);
@@ -238,24 +284,35 @@ void Board::traverse_right_down(int start_row, int stop_row, char color, int rig
             if (!skipped.empty() && last.empty()) {
                 break;
             } else if(!skipped.empty()) {
-                vector<Piece> tmp = last;
-                tmp.insert(tmp.end(), skipped.begin(), skipped.end());
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = tmp;
+                last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
+                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             } else {
                 moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
             }
             if(!last.empty()) {
-                int row_stop = min(row+3, ROWS);  
-                traverse_left_down(row+1, row_stop, color, right-1, last, moves);
-                traverse_right_down(row+1, row_stop, color, right+1, last, moves);
+                if(piece.isKing) {
+                    int row_stop_up = max(row - 3, 0);
+                    int row_stop_down = min(row + 3, ROWS);
+                    //cout << "444" << endl;
+                    traverse_left_up(row-1, row_stop_up, piece, right-1, last, moves);
+                    traverse_right_up(row-1, row_stop_up, piece, right+1, last, moves);
+                    traverse_left_down(row+1, row_stop_down, piece, right-1, last, moves);
+                    traverse_right_down(row+1, row_stop_down, piece, right+1, last, moves);
+                }
+                else {
+                    int row_stop = min(row+3, ROWS);  
+                    traverse_left_down(row+1, row_stop, piece, right-1, last, moves);
+                    traverse_right_down(row+1, row_stop, piece, right+1, last, moves);
+                }
             }
             break;
         }
-        else if(curr_piece.color == color) {
+        else if(curr_piece.color == piece.color) {
             break;
         }
         else {
             last.push_back(curr_piece);
+            //if(!last.empty()) this->remove(last);
         }
         right++; 
     }

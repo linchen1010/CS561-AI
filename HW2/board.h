@@ -8,6 +8,7 @@
 #include <list>
 #include <cmath>
 #include <stack>
+#include <set>
 #include "piece.h"
 
 #define ROWS  8
@@ -25,22 +26,83 @@ class Board {
         vector<Piece> w_piece; // store white piece info
         vector<vector<char> > board;
         vector<Piece> get_all_piece(char color);
+
+        
         Piece get_piece(int row, int col);
-        vector<vector<char> > create_board_after_move(vector<vector<char> > &board, Piece selected);
         unordered_map<string, vector<Piece> > get_valid_moves(Piece piece); // get valid move via traverse in 4 direction
+
+
         void traverse_left_up(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
         void traverse_right_up(int start_row, int stop_row, char color, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
         void traverse_left_down(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
-        void traverse_right_down(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
+        void traverse_right_down(int start_row, int stop_row, char color, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves);
         //
         
         void init_board(); // init board informa tion
         void get_piece_info(vector<vector<char> > board); // get piece info from given board.
         void print_board();
-        
+        void move(Piece piece, int row, int col);
+        void remove(vector<Piece> skipped);
+        int evaluate();
+        string winner();
+    private:
+        string pos_to_str(int row, int col);
         
         //Piece get_piece(int row, int col);
 };
+
+int Board::evaluate() {
+    return this->white_left - this->black_left + (this->white_king * 2 - this->black_king * 2);
+}
+
+string Board::winner() {
+    if(this->white_left <= 0) {
+        return "BLACK";
+    } else if(this->black_left <= 0) {
+        return "WHITE";
+    }
+    return "NONE";
+}
+
+string Board::pos_to_str(int row, int col) {
+    return to_string(row)+to_string(col);
+}
+
+void Board::move(Piece piece, int row, int col) {
+
+    char tmp = this->board[piece.row][piece.col];
+    this->board[piece.row][piece.col] = this->board[row][col];
+    this->board[row][col] = tmp;
+    piece.move(row, col);
+
+    if(row == 0 || row == ROWS - 1) {
+        piece.isKing = true;
+        if(piece.isKing) {
+            this->board[row][col] = toupper(this->board[row][col]);
+        }
+        if(piece.color == 'w') {
+            this->white_king += 1;
+        } else {
+            this->black_king += 1;
+        }
+    }
+}
+
+void Board::remove(vector<Piece> skipped) {
+    for(Piece piece: skipped) {
+        this->board[piece.row][piece.col] = '.';
+        if(piece.color == 'w') {
+            this->white_left--;
+        } 
+        else if(piece.color == 'b') {
+            this->black_left--;
+        } else {
+            cout << "Error: skipped chess.color == '.'" << endl;
+        }
+    }
+}
+
+
 
 vector<Piece> Board::get_all_piece(char color) {
     vector<Piece> pieces;
@@ -73,11 +135,11 @@ unordered_map<string, vector<Piece> > Board::get_valid_moves(Piece piece) {
 
 void Board::traverse_left_up(int start_row, int stop_row, char color, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
     vector<Piece> last;
-    //cout << "#==" << endl;
     for(int row = start_row; row > stop_row; row--) {
         if(left < 0) break; // bundary check
+
         Piece curr_piece = this->get_piece(row,left);
-        //cout << row << "," << left << endl;
+
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
                 break;
@@ -107,19 +169,13 @@ void Board::traverse_left_up(int start_row, int stop_row, char color, int left, 
 
 void Board::traverse_right_up(int start_row, int stop_row, char color, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves) {
     vector<Piece> last;
-    //cout << "--" << left << endl;
-    //cout << start_row << "-" << stop_row << "-" << right << endl;
     for(int row = start_row; row > stop_row; row--) {
-        //cout << "1" << endl;
         if(right >= COLS) break; // bundary check
         Piece curr_piece = this->get_piece(row,right);
-        //cout << curr_piece.row << ", " << curr_piece.col << " " << curr_piece.color << endl;
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
-                //cout << "2" << endl;
                 break;
             } else if(!skipped.empty()) {
-                //cout << "3" << endl;
                 vector<Piece> tmp = last;
                 tmp.insert(tmp.end(), skipped.begin(), skipped.end());
                 moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = tmp;

@@ -14,8 +14,10 @@
 /* function declartion */
 void input();
 void checkInput();
-
-
+int pos(char c);
+vector<Board> get_all_moves(Board board, string color);
+string switch_player(string color);
+Board minimax(Board board, int depth, bool max_player, string player_color);
 /* global variable */
 ifstream ifile;
 vector<vector<char> > inputBoard (8, vector<char> (8, '.'));
@@ -28,14 +30,18 @@ int main() {
     input();
     Board b;
     b.init_board();
-    b.get_piece_info(inputBoard); 
-    
-    for(Piece p: b.b_piece) {
-        cout << p.row << "," << p.col << " " << p.color << endl;
+    b.get_piece_info(inputBoard);
+    b.board = inputBoard;
+    vector<Board> boards = get_all_moves(b, "WHITE");
+    int i = 0;
+    for(Board board : boards) {
+        board.print_board();
+        cout << ++i << "\n";
+        cout << "------------" << endl;
     }
-    //checkInput();
-   
-    
+    //Board tmp = minimax(b, 2, true, "WHITE");
+    // tmp.print_board();
+    return 0;
 }
 
 void input() {
@@ -63,4 +69,61 @@ void checkInput() {
         cout << "\n";
     }
 }
+
+int pos(char c) {
+    return int(c - '0');
+}
+
+Board minimax(Board board, int depth, bool max_player, string player_color) {
+    if (depth == 0 || board.winner() != "NONE") return board;
+
+    if(max_player) {
+        int max_eval = INT_MIN;
+        Board best_move = board;
+        for(Board move: get_all_moves(board, player_color)) {
+            Board eval = minimax(move, depth-1, false, switch_player(player_color));
+            max_eval = max(max_eval, eval.evaluate());
+            if(max_eval == eval.evaluate()) {
+                best_move = move;
+            }
+        }
+        return best_move;
+    } else {
+        int min_eval = INT_MAX;
+        Board best_move = board;
+        for(Board move: get_all_moves(board, player_color)) {
+            Board eval = minimax(move, depth-1, true, switch_player(player_color));
+            min_eval = min(min_eval, eval.evaluate());
+            if(min_eval == eval.evaluate()) {
+                best_move = move;
+            }
+        }
+        return best_move;
+    }
+}
+
+vector<Board> get_all_moves(Board board, string color) {
+    vector<Board> boards;
+    vector<Piece> pieces;
+    if(color == "WHITE") pieces = board.w_piece;
+    else pieces = board.b_piece;
+    for(Piece piece: pieces) {
+        unordered_map<string, vector<Piece> > moves = board.get_valid_moves(piece);
+        for(auto it: moves) {
+            Board tmp_board = board;
+            int row = pos(it.first[0]);
+            int col = pos(it.first[1]);
+            tmp_board.move(piece, row, col);
+            if(!it.second.empty()) tmp_board.remove(it.second);
+            boards.push_back(tmp_board);
+        }
+    }
+    return boards;
+}
+
+string switch_player(string color) {
+    if(color == "WHITE") return "BLACK";
+    else return "WHITE";
+}
+
 

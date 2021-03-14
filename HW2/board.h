@@ -44,11 +44,22 @@ class Board {
         void remove(vector<Piece> skipped);
         int evaluate(string color);
         string winner();
+
     private:
         string pos_to_str(int row, int col);
         Piece get_piece_from_board(vector<vector<char> > board, int row, int col);
         void board_update(vector<vector<char> > &board, vector<Piece> skipped);
+        bool same_goal(unordered_map<string, vector<Piece> > moves, vector<Piece> skipped, int row, int col);
 };
+
+bool Board::same_goal(unordered_map<string, vector<Piece> > moves, vector<Piece> skipped, int row, int col) {
+    string pos = pos_to_str(row, col);
+    if(moves.count(pos) && moves[pos].size() == skipped.size()) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 Piece Board::get_piece_from_board(vector<vector<char> > board, int row, int col) {
     if(board[row][col] == 'W' || board[row][col] == 'B') {
@@ -59,7 +70,6 @@ Piece Board::get_piece_from_board(vector<vector<char> > board, int row, int col)
 void Board::board_update(vector<vector<char> > &board, vector<Piece> skipped) {
     for(Piece piece : skipped) {
         board[piece.row][piece.col] = '.';
-        cout << "update_board::" << piece.row << "," << piece.col << endl;
     }
 }
 
@@ -136,17 +146,13 @@ unordered_map<string, vector<Piece> > Board::get_valid_moves(Piece piece) {
     
     vector<vector<char> > board = this->board;
     board[piece.row][piece.col] = '.';
-    if(piece.isKing) cout << "piece is King" << endl;
-    else cout << "piece is not king" << endl;
     if(piece.color == 'b'  || piece.isKing) {
-        cout << "1#";
         traverse_left_down(row + 1, min(row + 3, ROWS), piece, left, skipped, moves, board);
         board = this->board;
         board[piece.row][piece.col] = '.';
         traverse_right_down(row + 1, min(row + 3, ROWS), piece, right, skipped, moves, board);
     }
     if(piece.color == 'w' || piece.isKing) {
-        cout << "2#";
         board = this->board;
         board[piece.row][piece.col] = '.';
         traverse_left_up(row - 1, max(row - 3, -1), piece, left, skipped, moves, board);
@@ -170,9 +176,9 @@ void Board::traverse_left_up(int start_row, int stop_row, Piece piece, int left,
                 break;
             } else if(!skipped.empty()) {
                 last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             } else {
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             }
             if(!last.empty()) {
                 board_update(board, last);
@@ -196,7 +202,6 @@ void Board::traverse_left_up(int start_row, int stop_row, Piece piece, int left,
             break;
         }
         else {
-            cout << curr_piece.row << curr_piece.col << curr_piece.color << endl;
             last.push_back(curr_piece);
         }
         left --; 
@@ -213,9 +218,9 @@ void Board::traverse_right_up(int start_row, int stop_row, Piece piece, int righ
                 break;
             } else if(!skipped.empty()) {
                 last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             } else {
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             }
             if(!last.empty()) { // handle skip
                 board_update(board, last);
@@ -255,9 +260,9 @@ void Board::traverse_left_down(int start_row, int stop_row, Piece piece, int lef
                 break;
             } else if(!skipped.empty()) {
                 last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             } else {
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             }
             if(!last.empty()) {
                 board_update(board, last);
@@ -299,9 +304,9 @@ void Board::traverse_right_down(int start_row, int stop_row, Piece piece, int ri
                 break;
             } else if(!skipped.empty()) {
                 last.insert(last.end(), skipped.begin(), skipped.end()); // last + skipped
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             } else {
-                moves[to_string(curr_piece.row)+to_string(curr_piece.col)] = last;
+                moves[pos_to_str(curr_piece.row,curr_piece.col)] = last;
             }
             if(!last.empty()) {
                 board_update(board, last);
@@ -381,8 +386,3 @@ void Board::print_board() {
         cout << "\n";
     }
 }
-
-
-
-
-

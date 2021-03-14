@@ -27,7 +27,6 @@ class Board {
         vector<vector<char> > board;
         vector<Piece> get_all_piece(char color);
 
-        
         Piece get_piece(int row, int col);
         unordered_map<string, vector<Piece> > get_valid_moves(Piece piece); // get valid move via traverse in 4 direction
 
@@ -43,14 +42,12 @@ class Board {
         void print_board();
         void move(Piece piece, int row, int col);
         void remove(vector<Piece> skipped);
-        int evaluate();
+        int evaluate(string color);
         string winner();
     private:
         string pos_to_str(int row, int col);
         Piece get_piece_from_board(vector<vector<char> > board, int row, int col);
         void board_update(vector<vector<char> > &board, vector<Piece> skipped);
-        //void board_move(vector<vector<char> > &board, Piece piece, )
-        //Piece get_piece(int row, int col);
 };
 
 Piece Board::get_piece_from_board(vector<vector<char> > board, int row, int col) {
@@ -66,8 +63,9 @@ void Board::board_update(vector<vector<char> > &board, vector<Piece> skipped) {
     }
 }
 
-int Board::evaluate() {
-    return this->white_left - this->black_left + (this->white_king * 2 - this->black_king * 2);
+int Board::evaluate(string color) {
+    if(color == "WHITE") return this->white_left - this->black_left + (this->white_king * 2 - this->black_king * 2);
+    else return this->black_left - this->white_left + (this->black_king * 2 - this->white_king * 2);
 }
 
 string Board::winner() {
@@ -184,7 +182,7 @@ void Board::traverse_left_up(int start_row, int stop_row, Piece piece, int left,
                     traverse_left_up(row-1, row_stop_up, piece, left-1, last, moves, board);
                     traverse_right_up(row-1, row_stop_up, piece, left+1, last, moves, board);
                     traverse_left_down(row+1, row_stop_down, piece, left-1, last, moves, board);
-                    //traverse_right_down(row+1, row_stop_down, piece, left+1, last, moves, board);
+                    traverse_right_down(row+1, row_stop_down, piece, left+1, last, moves, board);
                 }
                 else {
                     int row_stop = max(row-3, 0);
@@ -209,7 +207,6 @@ void Board::traverse_right_up(int start_row, int stop_row, Piece piece, int righ
     vector<Piece> last;
     for(int row = start_row; row > stop_row; row--) {
         if(right >= COLS) break; // bundary check
-        //Piece curr_piece = this->get_piece(row,right);
         Piece curr_piece = get_piece_from_board(board, row, right);
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
@@ -227,7 +224,7 @@ void Board::traverse_right_up(int start_row, int stop_row, Piece piece, int righ
                     int row_stop_down = min(row + 3, ROWS);
                     traverse_left_up(row-1, row_stop_up, piece, right-1, last, moves, board);
                     traverse_right_up(row-1, row_stop_up, piece, right+1, last, moves, board);
-                    //traverse_left_down(row+1, row_stop_down, piece, right-1, last, moves, board);
+                    traverse_left_down(row+1, row_stop_down, piece, right-1, last, moves, board);
                     traverse_right_down(row+1, row_stop_down, piece, right+1, last, moves, board);
                 }
                 else {
@@ -252,7 +249,6 @@ void Board::traverse_left_down(int start_row, int stop_row, Piece piece, int lef
     if(start_row < 0 || start_row > ROWS || left < 0 || left >= COLS) return;
     for(int row = start_row; row < stop_row; row++) {
         if(left < 0) break; // bundary check
-        //Piece curr_piece = this->get_piece(row,left);
         Piece curr_piece = get_piece_from_board(board, row, left);
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
@@ -269,7 +265,7 @@ void Board::traverse_left_down(int start_row, int stop_row, Piece piece, int lef
                     int row_stop_up = max(row - 3, 0);
                     int row_stop_down = min(row + 3, ROWS);
                     traverse_left_up(row-1, row_stop_up, piece, left-1, last, moves, board);
-                    //traverse_right_up(row-1, row_stop_up, piece, left+1, last, moves, board);
+                    traverse_right_up(row-1, row_stop_up, piece, left+1, last, moves, board);
                     traverse_left_down(row+1, row_stop_down, piece, left-1, last, moves, board);
                     traverse_right_down(row+1, row_stop_down, piece, left+1, last, moves, board);
                 }
@@ -286,7 +282,6 @@ void Board::traverse_left_down(int start_row, int stop_row, Piece piece, int lef
         }
         else {
             last.push_back(curr_piece);
-            //if(!skipped.empty()) this->remove(skipped);
         }
         left --; 
     }
@@ -313,7 +308,7 @@ void Board::traverse_right_down(int start_row, int stop_row, Piece piece, int ri
                 if(piece.isKing) {
                     int row_stop_up = max(row - 3, 0);
                     int row_stop_down = min(row + 3, ROWS);
-                    //traverse_left_up(row-1, row_stop_up, piece, right-1, last, moves, board);
+                    traverse_left_up(row-1, row_stop_up, piece, right-1, last, moves, board);
                     traverse_right_up(row-1, row_stop_up, piece, right+1, last, moves, board);
                     traverse_left_down(row+1, row_stop_down, piece, right-1, last, moves, board);
                     traverse_right_down(row+1, row_stop_down, piece, right+1, last, moves, board);
@@ -331,7 +326,6 @@ void Board::traverse_right_down(int start_row, int stop_row, Piece piece, int ri
         }
         else {
             last.push_back(curr_piece);
-            //if(!last.empty()) this->remove(last);
         }
         right++; 
     }

@@ -38,6 +38,7 @@ int main() {
         board.print_board();
         cout << ++i << "\n";
         cout << "------------" << endl;
+        cout << board.black_left << endl;
     }
     //Board tmp = minimax(b, 2, true, "WHITE");
     // tmp.print_board();
@@ -82,8 +83,8 @@ Board minimax(Board board, int depth, bool max_player, string player_color) {
         Board best_move = board;
         for(Board move: get_all_moves(board, player_color)) {
             Board eval = minimax(move, depth-1, false, switch_player(player_color));
-            max_eval = max(max_eval, eval.evaluate());
-            if(max_eval == eval.evaluate()) {
+            max_eval = max(max_eval, eval.evaluate(player_color));
+            if(max_eval == eval.evaluate(player_color)) {
                 best_move = move;
             }
         }
@@ -93,8 +94,8 @@ Board minimax(Board board, int depth, bool max_player, string player_color) {
         Board best_move = board;
         for(Board move: get_all_moves(board, player_color)) {
             Board eval = minimax(move, depth-1, true, switch_player(player_color));
-            min_eval = min(min_eval, eval.evaluate());
-            if(min_eval == eval.evaluate()) {
+            min_eval = min(min_eval, eval.evaluate(player_color));
+            if(min_eval == eval.evaluate(player_color)) {
                 best_move = move;
             }
         }
@@ -115,6 +116,7 @@ vector<Board> get_all_moves(Board board, string color) {
             int col = pos(it.first[1]);
             tmp_board.move(piece, row, col);
             if(!it.second.empty()) tmp_board.remove(it.second);
+            
             boards.push_back(tmp_board);
         }
     }

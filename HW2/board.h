@@ -63,7 +63,7 @@ bool Board::same_goal(unordered_map<string, vector<Piece> > moves, vector<Piece>
 
 Piece Board::get_piece_from_board(vector<vector<char> > board, int row, int col) {
     if(board[row][col] == 'W' || board[row][col] == 'B') {
-        return Piece(row, col, board[row][col], true);
+        return Piece(row, col, tolower(board[row][col]), true);
     } else return Piece(row, col, board[row][col], false);
 }
 
@@ -99,11 +99,10 @@ void Board::move(Piece piece, int row, int col) {
     piece.move(row, col);
 
     if(row == 0 || row == ROWS - 1) {
+        
+        this->board[row][col] = toupper(this->board[row][col]);
         piece.isKing = true;
-        if(piece.isKing) {
-            this->board[row][col] = toupper(this->board[row][col]);
-        }
-        if(piece.color == 'w') {
+        if(piece.color == 'W') {
             this->white_king += 1;
         } else {
             this->black_king += 1;
@@ -117,10 +116,8 @@ void Board::remove(vector<Piece> skipped) {
         if(piece.color == 'w') {
             this->white_left--;
         } 
-        else if(piece.color == 'b') {
+        else {
             this->black_left--;
-        } else {
-            cout << "Error: skipped chess.color == '.'" << endl;
         }
     }
 }
@@ -165,12 +162,17 @@ unordered_map<string, vector<Piece> > Board::get_valid_moves(Piece piece) {
 }
 
 void Board::traverse_left_up(int start_row, int stop_row, Piece piece, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves, vector<vector<char> > &board) {
-    vector<Piece> last;
-    for(int row = start_row; row > stop_row; row--) {
-        if(left < 0) break; // bundary check
+    if(start_row < 0 || start_row >= ROWS || stop_row < 0 || stop_row >= ROWS) return;
 
-        //Piece curr_piece = this->get_piece(row,left);
+    vector<Piece> last;
+
+    for(int row = start_row; row > stop_row; row--) {
+
+        if(left < 0) break; // bundary check
         Piece curr_piece = get_piece_from_board(board, row, left);
+
+        //cout << curr_piece.row << "," << curr_piece.col << " " << curr_piece.color << endl;
+
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
                 break;
@@ -209,10 +211,17 @@ void Board::traverse_left_up(int start_row, int stop_row, Piece piece, int left,
 }
 
 void Board::traverse_right_up(int start_row, int stop_row, Piece piece, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves, vector<vector<char> > &board) {
+    if(start_row < 0 || start_row >= ROWS || stop_row < 0 || stop_row >= ROWS) return;
+
     vector<Piece> last;
-    for(int row = start_row; row > stop_row; row--) {
+
+    for(int row = start_row; row >= stop_row; row--) {
+
         if(right >= COLS) break; // bundary check
         Piece curr_piece = get_piece_from_board(board, row, right);
+
+        //cout << curr_piece.row << "," << curr_piece.col << "-" << curr_piece.color << "--" << stop_row << endl;
+
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
                 break;
@@ -250,11 +259,17 @@ void Board::traverse_right_up(int start_row, int stop_row, Piece piece, int righ
 }
 
 void Board::traverse_left_down(int start_row, int stop_row, Piece piece, int left, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves, vector<vector<char> > &board) {
+    if(start_row < 0 || start_row >= ROWS || stop_row < 0 || stop_row >= ROWS) return;
+
     vector<Piece> last;
-    if(start_row < 0 || start_row > ROWS || left < 0 || left >= COLS) return;
+
     for(int row = start_row; row < stop_row; row++) {
+
         if(left < 0) break; // bundary check
         Piece curr_piece = get_piece_from_board(board, row, left);
+
+        //cout << curr_piece.row << "," << curr_piece.col << " " << curr_piece.color << endl;
+
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
                 break;
@@ -293,12 +308,17 @@ void Board::traverse_left_down(int start_row, int stop_row, Piece piece, int lef
 }
 
 void Board::traverse_right_down(int start_row, int stop_row, Piece piece, int right, vector<Piece> skipped, unordered_map<string, vector<Piece> > &moves, vector<vector<char> > &board) {
+    if(start_row < 0 || start_row >= ROWS || stop_row < 0 || stop_row >= ROWS) return;
+
     vector<Piece> last;
-    if(start_row < 0 || start_row >= ROWS || right < 0 || right >= COLS) return;
+
     for(int row = start_row; row < stop_row; row++) {
         if(right >= COLS) break; // bundary check
-        //Piece curr_piece = this->get_piece(row,right);
+
         Piece curr_piece = get_piece_from_board(board, row, right);
+
+        //cout << curr_piece.row << "," << curr_piece.col << " " << curr_piece.color << endl;
+
         if(curr_piece.color == '.') {
             if (!skipped.empty() && last.empty()) {
                 break;
@@ -339,7 +359,7 @@ void Board::traverse_right_down(int start_row, int stop_row, Piece piece, int ri
 
 Piece Board::get_piece(int row, int col) {
     if(this->board[row][col] == 'W' || this->board[row][col] == 'B') {
-        return Piece(row, col, this->board[row][col], true);
+        return Piece(row, col, tolower(this->board[row][col]), true);
     } else return Piece(row, col, this->board[row][col], true);
 }
 
@@ -352,7 +372,7 @@ void Board::get_piece_info(vector<vector<char> > board) {
                 w_piece.push_back(Piece(row, col, 'w', false));
             }
             else if(board[row][col] == 'W') {
-                this->white_left++;
+               // this->white_left++;
                 this->white_king++;
                 w_piece.push_back(Piece(row, col, 'w', true));
             }
@@ -361,7 +381,7 @@ void Board::get_piece_info(vector<vector<char> > board) {
                 b_piece.push_back(Piece(row, col, 'b', false));
             }
             else if(board[row][col] == 'B') {
-                this->black_left++;
+                //this->black_left++;
                 this->black_king++;
                 b_piece.push_back(Piece(row, col, 'b', true));
             }

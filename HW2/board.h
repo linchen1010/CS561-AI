@@ -92,20 +92,21 @@ string Board::pos_to_str(int row, int col) {
 }
 
 void Board::move(Piece piece, int row, int col) {
-
+    
     char tmp = this->board[piece.row][piece.col];
     this->board[piece.row][piece.col] = this->board[row][col];
     this->board[row][col] = tmp;
     piece.move(row, col);
 
     if(row == 0 || row == ROWS - 1) {
-        
         this->board[row][col] = toupper(this->board[row][col]);
         piece.isKing = true;
-        if(piece.color == 'W') {
+        if(piece.color == 'w') {
             this->white_king += 1;
+            this->white_left -= 1;
         } else {
             this->black_king += 1;
+            this->black_left -= 1;
         }
     }
 }
@@ -115,9 +116,11 @@ void Board::remove(vector<Piece> skipped) {
         this->board[piece.row][piece.col] = '.';
         if(piece.color == 'w') {
             this->white_left--;
+            if(piece.isKing) this->white_king --;
         } 
         else {
             this->black_left--;
+            if(piece.isKing) this->black_king --;
         }
     }
 }

@@ -25,20 +25,19 @@ class Board {
         vector<vector<char> > board;
         vector<pair<int, int>> path;
         
-        
         vector<Piece> get_all_piece(char color);
         vector<Board> get_all_moves(Piece piece);
 
         void piece_jump(Piece piece, int row_dir, Board cur_board, vector<Board> &boards);
         void king_jump(Piece piece, Board cur_board, vector<Board> &boards);
         void piece_move(Piece piece, int row_dir, int col_dir, Board cur_board, vector<Board> &boards);
-        bool valid(Piece piece, int row, int col);
-    
+        bool can_jump(Piece piece);
+        int evaluate(string color);
 
         void init_board(); // init board informa tion
         void get_piece_info(); // get piece info from given board.
         void print_board();
-        bool can_jump(Piece piece);
+        
 
     private:
         bool could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board);
@@ -46,22 +45,21 @@ class Board {
 
 };
 
-vector<Board> Board::get_all_moves(Piece piece) {
-    vector<Board> boards;
-    
+int Board::evaluate(string color) {
+    if(color == "WHITE") return this->white_left - this->black_left + (this->white_king * 2 - this->black_king * 2);
+    else return this->black_left - this->white_left + (this->black_king * 2 - this->white_king * 2);
+}
 
+vector<Board> Board::get_all_moves(Piece piece) {
+    
+    vector<Board> boards;
     Board cur_board = *this;
-    vector<Piece> skipped;
-    int up = -1, left = -1;
-    int down = 1, right = 1;
-    bool jump = false;
+   
     if(piece.isKing) {
         //cout << "2123";
         if(cur_board.can_jump(piece)) {
             king_jump(piece, cur_board, boards);
-            jump = true;
-        }
-        if(!jump) {
+        } else {
             piece_move(piece, -1, -1, cur_board, boards);
             piece_move(piece, -1, 1, cur_board, boards);
             piece_move(piece, 1, -1, cur_board, boards);
@@ -71,19 +69,16 @@ vector<Board> Board::get_all_moves(Piece piece) {
     else if(piece.color == 'b') {
         if(cur_board.can_jump(piece)) {
             piece_jump(piece, 1, cur_board, boards);
-            jump = true;
-        }
-        if(!jump) {
+        } else {
             piece_move(piece, 1, -1, cur_board, boards);
             piece_move(piece, 1, 1, cur_board, boards);
         }
+        
     }
     else if(piece.color == 'w') {
         if(cur_board.can_jump(piece)) {
             piece_jump(piece, -1, cur_board, boards);
-            jump = true;
-        }
-        if(!jump) {
+        } else {
             piece_move(piece, -1, -1, cur_board, boards);
             piece_move(piece, -1, 1, cur_board, boards);
         }
@@ -98,8 +93,10 @@ void Board::king_jump(Piece piece, Board cur_board, vector<Board> &boards) {
         boards.push_back(cur_board);
         return;
     }
+    
     vector<int> col_dir {-1, 1};
     vector<int> row_dir {-1, 1};
+
     for(int row: row_dir) {
         for(int col : col_dir) {
             if(could_jump(piece, row, col, cur_board)) {

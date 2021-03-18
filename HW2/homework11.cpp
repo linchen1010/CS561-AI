@@ -32,16 +32,27 @@ int main() {
     b.init_board();
     b.get_piece_info(inputBoard);
     b.board = inputBoard;
+    //cout << b.get_piece(1,5).color << endl;
     vector<Board> boards = get_all_moves(b, "WHITE");
-    int i = 0;
-    for(Board board : boards) {
-        board.print_board();
-        cout << ++i << "\n";
-        cout << "------------" << endl;
-        cout << board.black_left << endl;
-    }
-    //Board tmp = minimax(b, 2, true, "WHITE");
-    // tmp.print_board();
+    //vector<Board> boards;
+    // for(auto piece : b.w_piece) {
+    //     b.get_moves(piece, boards);
+    //     cout << piece.row << piece.col << endl;
+    // }
+     int i = 0;
+    
+    // for(Board board : boards) {
+    //     board.print_board();
+    //     cout << ++i << "\n";
+    //     cout << "------------" << endl;
+    //     cout << "white: " << board.white_left << " white_king: " << board.white_king << endl;
+    //     cout << "black: " << board.black_left << " black_king: " << board.black_king << endl;
+    //     cout << board.evaluate("WHITE") << endl;
+    // }
+
+    Board tmp = minimax(b, 3, true, "WHITE");
+    cout << b.get_piece(2,5).color << endl;
+    tmp.print_board();
     return 0;
 }
 
@@ -76,8 +87,8 @@ int pos(char c) {
 }
 
 Board minimax(Board board, int depth, bool max_player, string player_color) {
-    if (depth == 0 || board.winner() != "NONE") return board;
-
+    //cout << "111" << endl;
+    if (depth == 0) return board;
     if(max_player) {
         int max_eval = INT_MIN;
         Board best_move = board;

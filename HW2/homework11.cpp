@@ -19,7 +19,7 @@ void checkInput();
 int pos(char c);
 vector<Board> get_all_moves(Board board, string color);
 string switch_player(string color);
-Board minimax(Board board, int depth, bool max_player, string player_color);
+Board minimax(Board board, int depth, bool max_player, int alpha, int beta, string player_color);
 /* global variable */
 ifstream ifile;
 vector<vector<char> > inputBoard (8, vector<char> (8, '.'));
@@ -37,21 +37,22 @@ int main() {
     // Piece p(4,3,'w',true);
     // vector<Board> boards= b.get_all_moves(p);
     //b.print_board();
-    
-    // vector<Board> boards = get_all_moves(b, "BLACK");
+    int i = 0;
+    vector<Board> boards = get_all_moves(b, "WHITE");
     // for(auto board: boards) {
     //     board.print_board();
     //     for(auto pos : board.path) {
     //         cout << pos.first << "," << pos.second << endl;
     //     }
     //     cout << "---------------" << endl;
+    //     cout << ++i << endl;
     //     cout << "white_left: " << board.white_left << endl;
     //     cout << "white_king: " << board.white_king << endl;
     //     cout << "black_left: " << board.black_left << endl;
     //     cout << "black_king: " << board.black_king << endl;
     // }
 
-    Board tmp = minimax(b, 5, true, playTurn);
+    Board tmp = minimax(b, 7, true, INT_MIN, INT_MAX, playTurn);
     tmp.print_board();
 
 
@@ -89,34 +90,40 @@ int pos(char c) {
     return int(c - '0');
 }
 
-Board minimax(Board board, int depth, bool max_player, string player_color) {
+Board minimax(Board board, int depth, bool max_player, int alpha, int beta, string player_color) {
     //cout << "111" << endl;
-    if (depth == 0) return board;
+    if (depth <= 0) return board;
     //cout << k++ << endl;
     if(max_player) {
         int max_eval = INT_MIN;
         Board best_move = board;
         for(Board move: get_all_moves(board, player_color)) {
-            Board eval = minimax(move, depth-1, false, switch_player(player_color));
+            Board eval = minimax(move, depth-1, false, alpha, beta, switch_player(player_color));
             max_eval = max(max_eval, eval.evaluate(player_color));
+            alpha = max(alpha, max_eval);
             if(max_eval == eval.evaluate(player_color)) {
                 best_move = move;
             }
+            //if(beta <= alpha) break;
         }
         return best_move;
     } else {
         int min_eval = INT_MAX;
         Board best_move = board;
         for(Board move: get_all_moves(board, player_color)) {
-            Board eval = minimax(move, depth-1, true, switch_player(player_color));
+            Board eval = minimax(move, depth-1, true, alpha, beta, switch_player(player_color));
             min_eval = min(min_eval, eval.evaluate(player_color));
+            beta = min(beta, min_eval);
             if(min_eval == eval.evaluate(player_color)) {
                 best_move = move;
             }
+            //if(beta <= alpha) break;
         }
         return best_move;
     }
 }
+
+
 
 vector<Board> get_all_moves(Board board, string color) {
     vector<Board> boards;

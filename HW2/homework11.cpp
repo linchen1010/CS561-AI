@@ -16,10 +16,12 @@ int k = 0;
 /* function declartion */
 void input();
 void checkInput();
-int pos(char c);
 vector<Board> get_all_moves(Board board, string color);
 string switch_player(string color);
 Board minimax(Board board, int depth, bool max_player, int alpha, int beta, string player_color);
+string transform(int row, int col);
+string createPath(vector<pair<int, int> > path, int ori_piece_num, int after_piece_num);
+
 /* global variable */
 ifstream ifile;
 vector<vector<char> > inputBoard (8, vector<char> (8, '.'));
@@ -52,9 +54,14 @@ int main() {
     //     cout << "black_king: " << board.black_king << endl;
     // }
 
-    Board tmp = minimax(b, 7, true, INT_MIN, INT_MAX, playTurn);
+    Board tmp = minimax(b, 5, true, INT_MIN, INT_MAX, playTurn);
     tmp.print_board();
+    cout << transform(tmp.path[0].first, tmp.path[0].second) << endl;
+    
+    int ori_piece_num = b.white_left + b.white_king + b.black_left + b.black_king;
+    int after_piece_num = tmp.white_left + tmp.white_king + tmp.black_left + tmp.black_king;
 
+    cout << createPath(tmp.path, ori_piece_num, after_piece_num) << endl;
 
     
     return 0;
@@ -86,9 +93,6 @@ void checkInput() {
     }
 }
 
-int pos(char c) {
-    return int(c - '0');
-}
 
 Board minimax(Board board, int depth, bool max_player, int alpha, int beta, string player_color) {
     //cout << "111" << endl;
@@ -104,7 +108,7 @@ Board minimax(Board board, int depth, bool max_player, int alpha, int beta, stri
             if(max_eval == eval.evaluate(player_color)) {
                 best_move = move;
             }
-            //if(beta <= alpha) break;
+            if(beta <= alpha) break;
         }
         return best_move;
     } else {
@@ -117,7 +121,7 @@ Board minimax(Board board, int depth, bool max_player, int alpha, int beta, stri
             if(min_eval == eval.evaluate(player_color)) {
                 best_move = move;
             }
-            //if(beta <= alpha) break;
+            if(beta <= alpha) break;
         }
         return best_move;
     }
@@ -140,6 +144,29 @@ vector<Board> get_all_moves(Board board, string color) {
 string switch_player(string color) {
     if(color == "WHITE") return "BLACK";
     else return "WHITE";
+}
+
+string transform(int row, int col) {
+    string ans;
+    ans += 'a' + col;
+    ans += to_string((row-8) * (-1));
+    return ans;
+}
+
+string createPath(vector<pair<int, int> > path, int ori_piece_num, int after_piece_num) {
+    string type = "";
+    if(ori_piece_num == after_piece_num) type += "E"; // move
+    else type += "J"; // jump
+
+    string ans = "";
+    vector<string> allStep;
+    for(auto step: path) {
+        allStep.push_back(transform(step.first, step.second));
+    }
+    for(int i = 0; i < allStep.size()-1; i++) {
+        ans += type + " " + allStep[i] + " " + allStep[i+1] + "\n";
+    }
+    return ans;
 }
 
 

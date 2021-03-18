@@ -42,6 +42,7 @@ class Board {
         void print_board();
         void remove(vector<Piece> skipped);
         void move(Piece start, Piece end);
+        bool can_jump(Piece piece);
 
     private:
         bool could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board);
@@ -65,43 +66,58 @@ vector<Board> Board::get_all_moves(Piece piece) {
         // king_jump/move
     }
     else if(piece.color == 'b') {
-        // do recursive dfs
-        // move up and down by row_dir & col_dir
+        if(could_jump(piece, down, left, cur_board)) {
+            piece_jump(piece, down, left, cur_board, boards);
+        }
+        if(could_jump(piece, down, right, cur_board)) {
+            cout << "###" << endl;
+            piece_jump(piece, down, right, cur_board, boards);
+        }
     }
     else if(piece.color == 'w') {
-        if(could_jump(piece, up, left, cur_board)) {
-            piece_jump(piece, up, left, cur_board, boards);
-        }
-        if(could_jump(piece, up, right, cur_board)) {
-            cout << "###" << endl;
-            piece_jump(piece, up, right, cur_board, boards);
-        }
+        if(cur_board.can_jump(piece)) piece_jump(piece, -1, 1, cur_board, boards);
     }
     return boards;
 }
 
 void Board::piece_jump(Piece piece, int row_dir, int col_dir, Board cur_board, vector<Board> &boards) {
-    cout << piece.color << endl;
-    if(!could_jump(piece, row_dir, col_dir, cur_board)) {
+    if(!cur_board.can_jump(piece)) {
         boards.push_back(cur_board);
         return;
     }
     // cout << piece.color << endl;
-    Board copy = cur_board;
-        
-    copy.board[piece.row + row_dir][piece.col + col_dir] = '.';
-    swap(copy.board[piece.row][piece.col], copy.board[piece.row + 2*row_dir][piece.col + 2 * col_dir]);
+    
+    if(could_jump(piece, row_dir, col_dir, cur_board)) {
+        Piece new_piece(piece.row + 2*row_dir, piece.col + 2*col_dir, piece.color, false);
+        Board copy = cur_board;
+        copy.board[piece.row + row_dir][piece.col + col_dir] = '.';
+        swap(copy.board[piece.row][piece.col], copy.board[piece.row + 2*row_dir][piece.col + 2 * col_dir]);
 
-    // if reach end, make king
-    if((piece.row + 2 * row_dir == 0 || piece.row + 2 * row_dir == ROWS-1)) {
-        copy.board[piece.row + 2*row_dir][piece.col + 2 *col_dir] = toupper(copy.board[piece.row + 2*row_dir][piece.col + 2 *col_dir]);
-        boards.push_back(copy);
-        return;
+        // if reach end, make king
+        if((piece.row + 2 * row_dir == 0 || piece.row + 2 * row_dir == ROWS-1)) {
+            copy.board[piece.row + 2*row_dir][piece.col + 2 *col_dir] = toupper(copy.board[piece.row + 2*row_dir][piece.col + 2 *col_dir]);
+            boards.push_back(copy);
+            return;
+        }
+
+        piece_jump(new_piece, row_dir, col_dir, copy, boards);
     }
+    col_dir = -col_dir;
+    if(could_jump(piece, row_dir, col_dir, cur_board)) {
+        Piece new_piece(piece.row + 2*row_dir, piece.col + 2*col_dir, piece.color, false);
+        Board copy = cur_board;
+        copy.board[piece.row + row_dir][piece.col + col_dir] = '.';
+        swap(copy.board[piece.row][piece.col], copy.board[piece.row + 2*row_dir][piece.col + 2 * col_dir]);
 
-    Piece new_piece(piece.row + 2*row_dir, piece.col + 2*col_dir, piece.color, false);
-    piece_jump(new_piece, row_dir, col_dir, copy, boards);
-    if(could_jump(new_piece, row_dir, -col_dir, copy)) piece_jump(new_piece, row_dir, -col_dir, copy, boards);
+        // if reach end, make king
+        if((piece.row + 2 * row_dir == 0 || piece.row + 2 * row_dir == ROWS-1)) {
+            copy.board[piece.row + 2*row_dir][piece.col + 2 *col_dir] = toupper(copy.board[piece.row + 2*row_dir][piece.col + 2 *col_dir]);
+            boards.push_back(copy);
+            return;
+        }
+        piece_jump(new_piece, row_dir, col_dir, copy, boards);
+    }
+        
     
      
 }
@@ -113,15 +129,20 @@ bool Board::could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board) 
     int nnRow = piece.row + 2 * row_dir;
     int nnCol = piece.col + 2 * col_dir;
 
-   
     if(nRow < 0 || nRow >= ROWS || nCol < 0 || nCol >= COLS) return false;
     //cout << "1" << endl;
     if(nnRow < 0 || nnRow >= ROWS || nnCol < 0 || nnCol >= COLS) return false;
+    
     if(cur_board.board[nRow][nCol] == '.' || cur_board.board[nRow][nCol] == piece.color) return false;
     else {
-        cout << "123" << endl;;
         if(cur_board.board[nnRow][nnCol] == '.') return true;
     }
+    return false;
+}
+
+bool Board::can_jump(Piece piece) {
+    if(piece.color == 'w') return could_jump(piece, -1, -1, *this) || could_jump(piece, -1, 1, *this);
+    else if(piece.color == 'b') return could_jump(piece, 1, -1, *this) || could_jump(piece, 1, 1, *this);
     return false;
 }
 

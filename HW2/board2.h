@@ -37,13 +37,22 @@ class Board {
         void init_board(); // init board informa tion
         void get_piece_info(); // get piece info from given board.
         void print_board();
-        
+        string winner();
 
     private:
         bool could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board);
         Piece get_piece(int row, int col);
 
 };
+
+string Board::winner() {
+    if(this->white_left <= 0) {
+        return "BLACK";
+    } else if(this->black_left <= 0) {
+        return "WHITE";
+    }
+    return "NONE";
+}
 
 int Board::evaluate(string color) {
     if(color == "WHITE") return this->white_left - this->black_left + (this->white_king * 2 - this->black_king * 2);

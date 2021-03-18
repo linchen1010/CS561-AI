@@ -29,7 +29,8 @@ class Board {
         vector<Piece> get_all_piece(char color);
         vector<Board> get_all_moves(Piece piece);
 
-        void piece_jump(Piece piece, int row_dir, int col_dir, Board cur_board, vector<Board> &boards);
+        void piece_jump(Piece piece, int row_dir, Board cur_board, vector<Board> &boards);
+        void king_jump(Piece piece, Board cur_board, vector<Board> &boards);
         void piece_move(Piece piece, int row_dir, int col_dir, Board cur_board, vector<Board> &boards);
         bool valid(Piece piece, int row, int col);
     
@@ -51,66 +52,97 @@ vector<Board> Board::get_all_moves(Piece piece) {
 
     Board cur_board = *this;
     vector<Piece> skipped;
-    vector<Piece> path;
     int up = -1, left = -1;
     int down = 1, right = 1;
-
-    //moveBoard.push_back(moved_board);
+    bool jump = false;
     if(piece.isKing) {
-        // king_jump/move
+        //cout << "2123";
+        if(cur_board.can_jump(piece)) {
+            king_jump(piece, cur_board, boards);
+            jump = true;
+        }
+        if(!jump) {
+            piece_move(piece, -1, -1, cur_board, boards);
+            piece_move(piece, -1, 1, cur_board, boards);
+            piece_move(piece, 1, -1, cur_board, boards);
+            piece_move(piece, 1, 1, cur_board, boards);
+        }
     }
     else if(piece.color == 'b') {
-        if(cur_board.can_jump(piece)) piece_jump(piece, 1, 1, cur_board, boards);
-        piece_move(piece, 1, -1, cur_board, boards);
-        piece_move(piece, 1, 1, cur_board, boards);
+        if(cur_board.can_jump(piece)) {
+            piece_jump(piece, 1, cur_board, boards);
+            jump = true;
+        }
+        if(!jump) {
+            piece_move(piece, 1, -1, cur_board, boards);
+            piece_move(piece, 1, 1, cur_board, boards);
+        }
     }
     else if(piece.color == 'w') {
-        if(cur_board.can_jump(piece)) piece_jump(piece, -1, 1, cur_board, boards);
-        piece_move(piece, -1, -1, cur_board, boards);
-        piece_move(piece, -1, 1, cur_board, boards);
+        if(cur_board.can_jump(piece)) {
+            piece_jump(piece, -1, cur_board, boards);
+            jump = true;
+        }
+        if(!jump) {
+            piece_move(piece, -1, -1, cur_board, boards);
+            piece_move(piece, -1, 1, cur_board, boards);
+        }
     }
     return boards;
 }
 
-void Board::piece_jump(Piece piece, int row_dir, int col_dir, Board cur_board, vector<Board> &boards) {
+void Board::king_jump(Piece piece, Board cur_board, vector<Board> &boards) {
     if(!cur_board.can_jump(piece)) {
+        cur_board.init_board();
         cur_board.get_piece_info();
         boards.push_back(cur_board);
         return;
     }
-    // cout << piece.color << endl;
-    
-    if(could_jump(piece, row_dir, col_dir, cur_board)) {
-        Piece new_piece(piece.row + 2*row_dir, piece.col + 2*col_dir, piece.color, false);
-        Board copy = cur_board;
-        copy.board[piece.row + row_dir][piece.col + col_dir] = '.';
-        copy.path.push_back({new_piece.row, new_piece.col});
-        swap(copy.board[piece.row][piece.col], copy.board[new_piece.row][new_piece.col]);
+    vector<int> col_dir {-1, 1};
+    vector<int> row_dir {-1, 1};
+    for(int row: row_dir) {
+        for(int col : col_dir) {
+            if(could_jump(piece, row, col, cur_board)) {
+                Piece new_piece(piece.row + 2*row, piece.col + 2*col, piece.color, true);
+                Board copy = cur_board;
+                copy.board[piece.row + row][piece.col + col] = '.';
+                copy.path.push_back({new_piece.row, new_piece.col});
+                swap(copy.board[piece.row][piece.col], copy.board[new_piece.row][new_piece.col]);
 
-        // if reach end, make king
-        if((new_piece.row == 0 || new_piece.row == ROWS-1)) {
-            copy.board[new_piece.row][new_piece.col] = toupper(copy.board[new_piece.row][new_piece.col]);
-            boards.push_back(copy);
-            return;
+                // if reach end, make king
+                king_jump(new_piece, copy, boards);
+            }
         }
-
-        piece_jump(new_piece, row_dir, col_dir, copy, boards);
     }
-    col_dir = -col_dir;
-    if(could_jump(piece, row_dir, col_dir, cur_board)) {
-        Piece new_piece(piece.row + 2*row_dir, piece.col + 2*col_dir, piece.color, false);
-        Board copy = cur_board;
-        copy.board[piece.row + row_dir][piece.col + col_dir] = '.';
-        copy.path.push_back({new_piece.row, new_piece.col});
-        swap(copy.board[piece.row][piece.col], copy.board[new_piece.row][new_piece.col]);
+}
 
-        // if reach end, make king
-        if((new_piece.row == 0 || new_piece.row == ROWS-1)) {
-            copy.board[new_piece.row][new_piece.col] = toupper(copy.board[new_piece.row][new_piece.col]);
-            boards.push_back(copy);
-            return;
+void Board::piece_jump(Piece piece, int row_dir, Board cur_board, vector<Board> &boards) {
+    if(!cur_board.can_jump(piece)) {
+        cur_board.init_board();
+        cur_board.get_piece_info();
+        boards.push_back(cur_board);
+        return;
+    }
+    vector<int> col {-1,1};
+    
+    for(int col_dir : col) {
+        if(could_jump(piece, row_dir, col_dir, cur_board)) {
+            Piece new_piece(piece.row + 2*row_dir, piece.col + 2*col_dir, piece.color, false);
+            Board copy = cur_board;
+            copy.board[piece.row + row_dir][piece.col + col_dir] = '.';
+            copy.path.push_back({new_piece.row, new_piece.col});
+            swap(copy.board[piece.row][piece.col], copy.board[new_piece.row][new_piece.col]);
+
+            // if reach end, make king
+            if((new_piece.row == 0 || new_piece.row == ROWS-1)) {
+                copy.board[new_piece.row][new_piece.col] = toupper(copy.board[new_piece.row][new_piece.col]);
+                copy.init_board();
+                copy.get_piece_info();
+                boards.push_back(copy);
+                return;
+            }
+            piece_jump(new_piece, row_dir, copy, boards);
         }
-        piece_jump(new_piece, row_dir, col_dir, copy, boards);
     }
 }
 
@@ -122,7 +154,6 @@ bool Board::could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board) 
     int nnCol = piece.col + 2 * col_dir;
 
     if(nRow < 0 || nRow >= ROWS || nCol < 0 || nCol >= COLS) return false;
-    //cout << "1" << endl;
     if(nnRow < 0 || nnRow >= ROWS || nnCol < 0 || nnCol >= COLS) return false;
     
     if(cur_board.board[nRow][nCol] == '.' || cur_board.board[nRow][nCol] == piece.color) return false;
@@ -133,8 +164,10 @@ bool Board::could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board) 
 }
 
 bool Board::can_jump(Piece piece) {
-    if(piece.color == 'w') return could_jump(piece, -1, -1, *this) || could_jump(piece, -1, 1, *this);
+    if(piece.isKing) return could_jump(piece, -1, -1, *this) || could_jump(piece, -1, 1, *this) || could_jump(piece, 1, -1, *this) || could_jump(piece, 1, 1, *this);
+    else if(piece.color == 'w') return could_jump(piece, -1, -1, *this) || could_jump(piece, -1, 1, *this);
     else if(piece.color == 'b') return could_jump(piece, 1, -1, *this) || could_jump(piece, 1, 1, *this);
+    
     return false;
 }
 
@@ -142,7 +175,7 @@ void Board::piece_move(Piece piece, int row_dir, int col_dir, Board cur_board, v
     if(piece.row + row_dir < 0 || piece.row + row_dir >= ROWS || piece.col + col_dir < 0 || piece.col + col_dir >= COLS) return;
     if(cur_board.board[piece.row+row_dir][piece.col+col_dir] == '.') {
         Board copy = cur_board;
-        Piece new_piece(piece.row + row_dir, piece.col + col_dir, piece.color, false);
+        Piece new_piece(piece.row + row_dir, piece.col + col_dir, piece.color, piece.isKing);
         copy.path.push_back({new_piece.row, new_piece.col});
         swap(copy.board[piece.row][piece.col], copy.board[new_piece.row][new_piece.col]);
         boards.push_back(copy);

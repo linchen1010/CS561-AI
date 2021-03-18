@@ -8,8 +8,10 @@
 #include <list>
 #include <cmath>
 #include <stack>
-#include "board.h"
+//#include "board.h"
+#include "board2.h"
 
+int k = 0;
 
 /* function declartion */
 void input();
@@ -30,29 +32,30 @@ int main() {
     input();
     Board b;
     b.init_board();
-    b.get_piece_info(inputBoard);
     b.board = inputBoard;
-    //cout << b.get_piece(1,5).color << endl;
-    vector<Board> boards = get_all_moves(b, "WHITE");
-    //vector<Board> boards;
-    // for(auto piece : b.w_piece) {
-    //     b.get_moves(piece, boards);
-    //     cout << piece.row << piece.col << endl;
-    // }
-     int i = 0;
+    b.get_piece_info();
+    // Piece p(4,3,'w',true);
+    // vector<Board> boards= b.get_all_moves(p);
+    //b.print_board();
     
-    // for(Board board : boards) {
+    // vector<Board> boards = get_all_moves(b, "BLACK");
+    // for(auto board: boards) {
     //     board.print_board();
-    //     cout << ++i << "\n";
-    //     cout << "------------" << endl;
-    //     cout << "white: " << board.white_left << " white_king: " << board.white_king << endl;
-    //     cout << "black: " << board.black_left << " black_king: " << board.black_king << endl;
-    //     cout << board.evaluate("WHITE") << endl;
+    //     for(auto pos : board.path) {
+    //         cout << pos.first << "," << pos.second << endl;
+    //     }
+    //     cout << "---------------" << endl;
+    //     cout << "white_left: " << board.white_left << endl;
+    //     cout << "white_king: " << board.white_king << endl;
+    //     cout << "black_left: " << board.black_left << endl;
+    //     cout << "black_king: " << board.black_king << endl;
     // }
 
-    Board tmp = minimax(b, 3, true, "WHITE");
-    cout << b.get_piece(2,5).color << endl;
+    Board tmp = minimax(b, 5, true, playTurn);
     tmp.print_board();
+
+
+    
     return 0;
 }
 
@@ -89,6 +92,7 @@ int pos(char c) {
 Board minimax(Board board, int depth, bool max_player, string player_color) {
     //cout << "111" << endl;
     if (depth == 0) return board;
+    //cout << k++ << endl;
     if(max_player) {
         int max_eval = INT_MIN;
         Board best_move = board;
@@ -120,16 +124,8 @@ vector<Board> get_all_moves(Board board, string color) {
     if(color == "WHITE") pieces = board.w_piece;
     else pieces = board.b_piece;
     for(Piece piece: pieces) {
-        unordered_map<string, vector<Piece> > moves = board.get_valid_moves(piece);
-        for(auto it: moves) {
-            Board tmp_board = board;
-            int row = pos(it.first[0]);
-            int col = pos(it.first[1]);
-            tmp_board.move(piece, row, col);
-            if(!it.second.empty()) tmp_board.remove(it.second);
-            
-            boards.push_back(tmp_board);
-        }
+        vector<Board> each_piece_moves = board.get_all_moves(piece);
+        boards.insert(boards.end(), each_piece_moves.begin(), each_piece_moves.end());
     }
     return boards;
 }

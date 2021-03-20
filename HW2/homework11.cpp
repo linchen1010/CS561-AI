@@ -40,16 +40,20 @@ float remainTime;
 using namespace std;
 
 int main() {
-    cout << MIN << endl;
+    //cout << MIN << endl;
     input();
     Board myBoard;
     myBoard.init_board();
     myBoard.board = inputBoard;
     myBoard.get_piece_info();
     int i = 0;
-    
+    int depth = 5;
+    if(gameMode == "SINGLE") depth = 1;
+    else { // need to read calibrate and decide how deep of the depth we need to go
+        depth = 5;
+    }
     const clock_t begin_time = clock();
-    Board result = minimax(myBoard, 5, true, MIN, MAX, playTurn);
+    Board result = minimax(myBoard, depth, true, MIN, MAX, playTurn);
     result.print_board();
     cout << float(clock()-begin_time) / CLOCKS_PER_SEC << endl;
     int ori_piece_num = myBoard.white_left + myBoard.white_king + myBoard.black_left + myBoard.black_king;

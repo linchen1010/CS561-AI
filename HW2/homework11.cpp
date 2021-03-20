@@ -13,6 +13,7 @@
 int k = 0;
 
 #define MAX 0x7fffffff
+#define MIN -0x7fffffff
 
 /* function declartion */
 void input();
@@ -25,6 +26,10 @@ Board minimax(Board board, int depth, bool max_player, int alpha, int beta, stri
 string transform(int row, int col);
 string createPath(vector<pair<int, int> > path, int ori_piece_num, int after_piece_num);
 
+
+void computeTime(Board initBoard);
+void outputTime(int depth, float time);
+
 /* global variable */
 ifstream ifile;
 ofstream ofile;
@@ -35,28 +40,16 @@ float remainTime;
 using namespace std;
 
 int main() {
-    
+    cout << MIN << endl;
     input();
     Board myBoard;
     myBoard.init_board();
     myBoard.board = inputBoard;
     myBoard.get_piece_info();
     int i = 0;
-    //vector<Board> boards = get_all_moves(b, "WHITE");
-    // for(auto board: boards) {
-    //     board.print_board();
-    //     for(auto pos : board.path) {
-    //         cout << pos.first << "," << pos.second << endl;
-    //     }
-    //     cout << "---------------" << endl;
-    //     cout << ++i << endl;
-    //     cout << "white_left: " << board.white_left << endl;
-    //     cout << "white_king: " << board.white_king << endl;
-    //     cout << "black_left: " << board.black_left << endl;
-    //     cout << "black_king: " << board.black_king << endl;
-    // }
+    
     const clock_t begin_time = clock();
-    Board result = minimax(myBoard, 7, true, INT_MIN, INT_MAX, playTurn);
+    Board result = minimax(myBoard, 5, true, MIN, MAX, playTurn);
     result.print_board();
     cout << float(clock()-begin_time) / CLOCKS_PER_SEC << endl;
     int ori_piece_num = myBoard.white_left + myBoard.white_king + myBoard.black_left + myBoard.black_king;
@@ -64,8 +57,27 @@ int main() {
 
     cout << createPath(result.path, ori_piece_num, after_piece_num) << endl;
     output(createPath(result.path, ori_piece_num, after_piece_num));
-    //if(1 > MIN) cout << ".";
+   
     return 0;
+}
+
+void computeTime(Board initBoard) {
+    ofile.open("outputTime.txt");
+    for(int depth = 1; depth < 8; depth++) {
+        const clock_t begin_time = clock();
+        Board result = minimax(initBoard, depth, true, MIN, MAX, playTurn);
+        float time = float(clock()-begin_time) / CLOCKS_PER_SEC;
+        ofile << depth << endl;
+        ofile << time << endl;
+    }
+    ofile.close();
+}
+
+void outputTime(int depth, float time) {
+    ofile.open("outputTime.txt");
+    ofile << depth << endl;
+    ofile << time << endl;
+    
 }
 
 void input() {
@@ -106,7 +118,7 @@ Board minimax(Board board, int depth, bool max_player, int alpha, int beta, stri
     if (depth <= 0) return board;
     //cout << k++ << endl;
     if(max_player) {
-        int max_eval = INT_MIN;
+        int max_eval = MIN;
         Board best_move = board;
         for(Board move: get_all_moves(board, player_color)) {
             Board eval = minimax(move, depth-1, false, alpha, beta, switch_player(player_color));
@@ -119,7 +131,7 @@ Board minimax(Board board, int depth, bool max_player, int alpha, int beta, stri
         }
         return best_move;
     } else {
-        int min_eval = INT_MAX;
+        int min_eval = MAX;
         Board best_move = board;
         for(Board move: get_all_moves(board, player_color)) {
             Board eval = minimax(move, depth-1, true, alpha, beta, switch_player(player_color));

@@ -8,14 +8,17 @@
 #include <list>
 #include <cmath>
 #include <stack>
-//#include "board.h"
-#include "board2.h"
+#include "board.h"
 
 int k = 0;
 
+#define MAX 0x7fffffff
+
 /* function declartion */
 void input();
+void output(string ans);
 void checkInput();
+/* game play function */
 vector<Board> get_all_moves(Board board, string color);
 string switch_player(string color);
 Board minimax(Board board, int depth, bool max_player, int alpha, int beta, string player_color);
@@ -24,6 +27,7 @@ string createPath(vector<pair<int, int> > path, int ori_piece_num, int after_pie
 
 /* global variable */
 ifstream ifile;
+ofstream ofile;
 vector<vector<char> > inputBoard (8, vector<char> (8, '.'));
 string gameMode;
 string playTurn;
@@ -31,16 +35,14 @@ float remainTime;
 using namespace std;
 
 int main() {
+    
     input();
-    Board b;
-    b.init_board();
-    b.board = inputBoard;
-    b.get_piece_info();
-    // Piece p(4,3,'w',true);
-    // vector<Board> boards= b.get_all_moves(p);
-    //b.print_board();
+    Board myBoard;
+    myBoard.init_board();
+    myBoard.board = inputBoard;
+    myBoard.get_piece_info();
     int i = 0;
-    vector<Board> boards = get_all_moves(b, "WHITE");
+    //vector<Board> boards = get_all_moves(b, "WHITE");
     // for(auto board: boards) {
     //     board.print_board();
     //     for(auto pos : board.path) {
@@ -53,17 +55,16 @@ int main() {
     //     cout << "black_left: " << board.black_left << endl;
     //     cout << "black_king: " << board.black_king << endl;
     // }
+    const clock_t begin_time = clock();
+    Board result = minimax(myBoard, 7, true, INT_MIN, INT_MAX, playTurn);
+    result.print_board();
+    cout << float(clock()-begin_time) / CLOCKS_PER_SEC << endl;
+    int ori_piece_num = myBoard.white_left + myBoard.white_king + myBoard.black_left + myBoard.black_king;
+    int after_piece_num = result.white_left + result.white_king + result.black_left + result.black_king;
 
-    Board tmp = minimax(b, 5, true, INT_MIN, INT_MAX, playTurn);
-    tmp.print_board();
-    cout << transform(tmp.path[0].first, tmp.path[0].second) << endl;
-    
-    int ori_piece_num = b.white_left + b.white_king + b.black_left + b.black_king;
-    int after_piece_num = tmp.white_left + tmp.white_king + tmp.black_left + tmp.black_king;
-
-    cout << createPath(tmp.path, ori_piece_num, after_piece_num) << endl;
-
-    
+    cout << createPath(result.path, ori_piece_num, after_piece_num) << endl;
+    output(createPath(result.path, ori_piece_num, after_piece_num));
+    //if(1 > MIN) cout << ".";
     return 0;
 }
 
@@ -79,6 +80,12 @@ void input() {
         }
     }
     ifile.close();
+}
+
+void output(string ans) {
+    ofile.open("output.txt");
+    ofile << ans;
+    ofile.close();
 }
 
 void checkInput() {

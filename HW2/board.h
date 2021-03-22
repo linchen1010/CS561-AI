@@ -45,6 +45,8 @@ class Board {
 
 };
 
+/** determine if there is a winner in current board or not */
+
 string Board::winner() {
     if(this->white_left <= 0) {
         return "BLACK";
@@ -54,11 +56,23 @@ string Board::winner() {
     return "NONE";
 }
 
+/** 
+ * Evaluation function that decide which move to go 
+ * @param color color of current player
+ * @return an integer for deciding move
+*/
+
 int Board::evaluate(string &color) {
     if(color == "WHITE") return this->white_left - this->black_left + (this->white_king * 2 - this->black_king * 2);
     else return this->black_left - this->white_left + (this->black_king * 2 - this->white_king * 2);
 }
 
+
+/**
+ * Given a piece in current board, get all postive moves of the piece.
+ * @param piece piece in current board
+ * @return a vector of Board after the piece move
+*/
 vector<Board> Board::get_all_moves(Piece piece) {
     
     vector<Board> boards;
@@ -95,6 +109,13 @@ vector<Board> Board::get_all_moves(Piece piece) {
     return boards;
 }
 
+/**
+ * king piece move, push the board after king moves (if there is any)
+ * @param piece King piece
+ * @param cur_board current state of the board
+ * @param boards return the boards after king moves
+*/
+
 void Board::king_jump(Piece piece, Board cur_board, vector<Board> &boards) {
     if(!cur_board.can_jump(piece)) {
         cur_board.init_board();
@@ -121,6 +142,14 @@ void Board::king_jump(Piece piece, Board cur_board, vector<Board> &boards) {
         }
     }
 }
+
+/**
+ * normal piece jump, modify board when the piece can't jump any more
+ * @param piece current piece
+ * @param row_dir row dircetion(-1,1), indicate up or down
+ * @param cur_board current state of the board
+ * @param boards return the boards after king moves
+*/
 
 void Board::piece_jump(Piece piece, int row_dir, Board cur_board, vector<Board> &boards) {
     if(!cur_board.can_jump(piece)) {
@@ -152,6 +181,16 @@ void Board::piece_jump(Piece piece, int row_dir, Board cur_board, vector<Board> 
     }
 }
 
+/**
+ * given a current piece and direction, decide if the piece could jump or not
+ * helper function of can_jump
+ * @param piece current piece
+ * @param row_dir row dircetion(-1,1), indicate up or down
+ * @param col_dir col direction(-1,1), indicate left or right
+ * @param cur_board current state of the board
+ * @return True when the piece could jump, false otherwise.
+*/
+
 bool Board::could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board) {
     // boundary check
     int nRow = piece.row + row_dir;
@@ -169,6 +208,12 @@ bool Board::could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board) 
     return false;
 }
 
+/**
+ * given a piece, decide if it could jump or not
+ * @param piece current piece
+ * @return true or false indication can jump or not
+*/
+
 bool Board::can_jump(Piece &piece) {
     if(piece.isKing) return could_jump(piece, -1, -1, *this) || could_jump(piece, -1, 1, *this) || could_jump(piece, 1, -1, *this) || could_jump(piece, 1, 1, *this);
     else if(piece.color == 'w') return could_jump(piece, -1, -1, *this) || could_jump(piece, -1, 1, *this);
@@ -177,6 +222,13 @@ bool Board::can_jump(Piece &piece) {
     return false;
 }
 
+/**
+ * given a piece, direction and current board, jump if it could
+ * @param piece current piece
+ * @param row_dir row dircetion(-1,1), indicate up or down
+ * @param col_dir col dircetion(-1,1), indicate left or right
+ * @return all possible moves using pass by reference
+*/
 void Board::piece_move(Piece piece, int row_dir, int col_dir, Board cur_board, vector<Board> &boards) {
     if(piece.row + row_dir < 0 || piece.row + row_dir >= ROWS || piece.col + col_dir < 0 || piece.col + col_dir >= COLS) return;
     if(cur_board.board[piece.row+row_dir][piece.col+col_dir] == '.') {
@@ -184,15 +236,26 @@ void Board::piece_move(Piece piece, int row_dir, int col_dir, Board cur_board, v
         Piece new_piece(piece.row + row_dir, piece.col + col_dir, piece.color, piece.isKing);
         copy.path.push_back({new_piece.row, new_piece.col});
         swap(copy.board[piece.row][piece.col], copy.board[new_piece.row][new_piece.col]);
+        if((new_piece.row == 0 || new_piece.row == ROWS-1)) {
+            copy.board[new_piece.row][new_piece.col] = toupper(copy.board[new_piece.row][new_piece.col]);
+        }
+        copy.init_board();
+        copy.get_piece_info();
         boards.push_back(copy);
     }
 }
+
 
 Piece Board::get_piece(int row, int col) {
     if(this->board[row][col] == 'W' || this->board[row][col] == 'B') {
         return Piece(row, col, tolower(this->board[row][col]), true);
     } else return Piece(row, col, this->board[row][col], false);
 }   
+
+/**
+ * get piece inforamation for the board who call this function and
+ * store information in board attribute.
+*/
 
 void Board::get_piece_info() {
     

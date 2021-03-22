@@ -201,7 +201,7 @@ bool Board::could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board) 
     if(nRow < 0 || nRow >= ROWS || nCol < 0 || nCol >= COLS) return false;
     if(nnRow < 0 || nnRow >= ROWS || nnCol < 0 || nnCol >= COLS) return false;
     
-    if(cur_board.board[nRow][nCol] == '.' || cur_board.board[nRow][nCol] == piece.color) return false;
+    if(cur_board.board[nRow][nCol] == '.' || tolower(cur_board.board[nRow][nCol]) == piece.color) return false;
     else {
         if(cur_board.board[nnRow][nnCol] == '.') return true;
     }

@@ -33,6 +33,7 @@ class Board {
         void piece_move(Piece piece, int row_dir, int col_dir, Board cur_board, vector<Board> &boards);
         bool can_jump(Piece &piece);
         int evaluate(string &color);
+        int evalPieceRowToVal(string &color);
 
         void init_board(); // init board informa tion
         void get_piece_info(); // get piece info from given board.
@@ -54,6 +55,31 @@ string Board::winner() {
         return "WHITE";
     }
     return "NONE";
+}
+
+int Board::evalPieceRowToVal(string &color) {
+
+    int black_val = 0;
+    int white_val = 0;
+    
+    for(Piece white : w_piece) {
+        if(white.isKing) {
+            white_val += 15;
+        } else {
+            white_val += 5 + (8-white.row);
+        }
+    }
+
+    for(Piece black : b_piece) {
+        if(black.isKing) {
+            black_val += 15;
+        } else {
+            black_val += 5 + black.row;
+        }
+    }
+
+    if(color == "WHITE") return white_val - black_val;
+    else return black_val - white_val;
 }
 
 /** 
@@ -255,6 +281,7 @@ Piece Board::get_piece(int row, int col) {
 /**
  * get piece inforamation for the board who call this function and
  * store information in board attribute.
+ * @param w_piece white piece
 */
 
 void Board::get_piece_info() {

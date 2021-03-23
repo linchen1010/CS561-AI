@@ -49,10 +49,13 @@ int main() {
     else { // need to read calibrate and decide how deep of the depth we need to go
         if(step <= 5) depth = 5;
         else {
-            if(remainTime < 1) depth = 5;
+            if(remainTime <= 0.1) depth = 1;
+            else if(remainTime <= 2.0) depth = 3;
+            else if(remainTime <= 8.0) depth = 5;
             else depth = 7;
         }
     }
+    cout << depth << endl;
     const clock_t begin_time = clock();
     Board result = minimax(myBoard, depth, true, MIN, MAX, playTurn);
     result.print_board();
@@ -62,9 +65,7 @@ int main() {
     
     cout << createPath(result.path, ori_piece_num, after_piece_num) << endl;
     output(createPath(result.path, ori_piece_num, after_piece_num));
-    //cout << result.black_left << " " <<  result.white_left << endl;
-
-    //playGame(myBoard);
+    
 
     return 0;
 }

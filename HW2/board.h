@@ -6,7 +6,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <list>
-#include <cmath>
+#include <math.h>
 #include <stack>
 #include <set>
 #include "piece.h"
@@ -34,6 +34,8 @@ class Board {
         bool can_jump(Piece &piece);
         int evaluate(string &color);
         int evalPieceRowToVal(string &color);
+        int evalPieceBoard(string &color);
+        int evalSumOfDist(string &color);
 
         void init_board(); // init board informa tion
         void get_piece_info(); // get piece info from given board.
@@ -43,34 +45,93 @@ class Board {
     private:
         bool could_jump(Piece piece, int row_dir, int col_dir, Board &cur_board);
         Piece get_piece(int row, int col);
+        int dist(Piece p1, Piece p2);
 
 };
 
 /** determine if there is a winner in current board or not */
 
+int Board::dist(Piece p1, Piece p2) {
+    int x = p1.row - p2.row;
+    int y = p1.col - p2.col;
+    double dist = sqrt(x*x + y*y);
+    return round(dist);
+}
+
+int Board::evalSumOfDist(string &color) {
+    
+    int sum_of_dist = 0;
+    for(Piece w: this->w_piece) {
+        for(Piece b: this->b_piece) {
+            sum_of_dist += dist(w,b);
+        }
+    }
+    
+    if(color == "WHITE") {
+        if(this->w_piece.size() >= this->b_piece.size()) {
+            sum_of_dist *= -1;
+        }
+    } else {
+        if(this->b_piece.size() >= this->w_piece.size()) {
+            sum_of_dist *= -1;
+        }
+    }
+    return sum_of_dist;
+    
+}
+
+
+
 string Board::winner() {
-    if(this->white_left <= 0) {
+    if(this->white_left <= 0 && this->white_king <= 0) {
         return "BLACK";
-    } else if(this->black_left <= 0) {
+    } else if(this->black_left <= 0 && this->black_king <= 0) {
         return "WHITE";
     }
     return "NONE";
+}
+
+int Board::evalPieceBoard(string &color) {
+    int black_val = 0;
+    int white_val = 0;
+    for(Piece white: this->w_piece) {
+        if(white.isKing) {
+            white_val += 10;
+        } else {
+            if(white.row < 4) white_val += 7; // oponent's board
+            else white_val += 5;
+        }
+    }
+
+    for(Piece black: this->b_piece) {
+        if(black.isKing) {
+            black_val += 10;
+        } else {
+            if(black.row >= 4) black_val += 7;
+            else black_val += 5;
+        }
+    }
+
+    if(color == "WHITE") return white_val - black_val;
+    else return black_val - white_val;
 }
 
 int Board::evalPieceRowToVal(string &color) {
 
     int black_val = 0;
     int white_val = 0;
-    
-    for(Piece white : w_piece) {
+    if(this->white_left == 0 && this->black_left == 0 && this->black_king > 0 && this->white_king > 0) {
+        return this->evalSumOfDist(color);
+    }
+    for(Piece white : this->w_piece) {
         if(white.isKing) {
             white_val += 15;
         } else {
-            white_val += 5 + (8-white.row);
+            white_val += 5 + (7-white.row);
         }
     }
 
-    for(Piece black : b_piece) {
+    for(Piece black : this->b_piece) {
         if(black.isKing) {
             black_val += 15;
         } else {

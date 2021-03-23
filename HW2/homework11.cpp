@@ -1,13 +1,3 @@
-#include <iostream>
-#include <queue>
-#include <algorithm>
-#include <string>
-#include <vector>
-#include <fstream>
-#include <unordered_map>
-#include <list>
-#include <cmath>
-#include <stack>
 #include "board.h"
 
 int k = 0;
@@ -23,9 +13,11 @@ void checkInput();
 vector<Board> get_all_moves(Board board, string color);
 string switch_player(string color);
 Board minimax(Board board, int depth, bool max_player, int alpha, int beta, string player_color);
+Board minimaxII(Board board, int depth, bool max_player, int alpha, int beta, string player_color);
 string transform(int row, int col);
 string createPath(vector<pair<int, int> > path, int ori_piece_num, int after_piece_num);
-
+void playGame(Board initBoard);
+void handlePlayData();
 
 void computeTime(Board initBoard);
 void outputTime(int depth, float time);
@@ -37,20 +29,29 @@ vector<vector<char> > inputBoard (8, vector<char> (8, '.'));
 string gameMode;
 string playTurn;
 float remainTime;
+
 using namespace std;
+
+int step;
 
 int main() {
     //cout << MIN << endl;
     input();
+    
+    handlePlayData();
     Board myBoard;
     myBoard.init_board();
     myBoard.board = inputBoard;
     myBoard.get_piece_info();
     // int i = 0;
     int depth = 5;
-    if(gameMode == "SINGLE") depth = 7;
+    if(gameMode == "SINGLE") depth = 1;
     else { // need to read calibrate and decide how deep of the depth we need to go
-        depth = 7;
+        if(step <= 5) depth = 5;
+        else {
+            if(remainTime < 1) depth = 5;
+            else depth = 7;
+        }
     }
     const clock_t begin_time = clock();
     Board result = minimax(myBoard, depth, true, MIN, MAX, playTurn);
@@ -61,10 +62,36 @@ int main() {
     
     cout << createPath(result.path, ori_piece_num, after_piece_num) << endl;
     output(createPath(result.path, ori_piece_num, after_piece_num));
-    cout << result.black_left << " " <<  result.white_left << endl;
+    //cout << result.black_left << " " <<  result.white_left << endl;
 
-    
+    //playGame(myBoard);
+
     return 0;
+}
+
+void handlePlayData() {
+    ifstream file("playdata.txt");
+    if(file) {
+        ifstream data;
+        //cout << "exist" << endl;
+        data.open("playdata.txt");
+        data >> step;
+        cout << step << endl;
+        data.close();
+        ofstream data_out;
+        data_out.open("playdata.txt");
+        step += 1;
+        data_out << step;
+        data_out.close();
+    }
+    else {
+        cout << "not exist" << endl;
+        ofstream ofile;
+        ofile.open("playdata.txt");
+        ofile << 1 << endl;
+        ofile.close();
+    }
+
 }
 
 void computeTime(Board initBoard) {
@@ -228,4 +255,53 @@ string createPath(vector<pair<int, int> > path, int ori_piece_num, int after_pie
     return ans;
 }
 
+Board minimaxII(Board board, int depth, bool max_player, int alpha, int beta, string player_color) {
+    if (depth <= 0) return board;
+
+    if(max_player) {
+        int max_eval = MIN;
+        Board best_move = board;
+        for(Board move: get_all_moves(board, player_color)) {
+            Board eval = minimax(move, depth-1, false, alpha, beta, switch_player(player_color));
+            max_eval = max(max_eval, eval.evalPieceRowToVal(playTurn));
+            alpha = max(alpha, max_eval);
+            if(max_eval == eval.evalPieceRowToVal(playTurn)) {
+                best_move = move;
+            }
+            if(beta <= alpha) break;
+        }
+        return best_move;
+    } else {
+        int min_eval = MAX;
+        Board best_move = board;
+        for(Board move: get_all_moves(board, player_color)) {
+            Board eval = minimax(move, depth-1, true, alpha, beta, switch_player(player_color));
+            min_eval = min(min_eval, eval.evalPieceRowToVal(playTurn));
+            beta = min(beta, min_eval);
+            if(min_eval == eval.evalPieceRowToVal(playTurn)) {
+                best_move = move;
+            }
+            if(beta <= alpha) break;
+        }
+        return best_move;
+    }
+}
+
+
+void playGame(Board initBoard) {
+    int moveStep = 0;
+    Board black = initBoard;
+    Board white = initBoard;
+    while((black.winner() == "NONE" && white.winner() == "NONE") && moveStep < 60) {
+        cout << "move: " << moveStep++ << endl;
+        playTurn = "WHITE";
+        cout << "-----WHITE-----" << endl;
+        white = minimaxII(black, 7, true, MIN, MAX, playTurn);
+        white.print_board();
+        playTurn = "BLACK";
+        cout << "-----BLACK-----" << endl;
+        black = minimaxII(white, 7, true, MIN, MAX, playTurn);
+        black.print_board();
+    }
+}
 

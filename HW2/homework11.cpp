@@ -288,7 +288,12 @@ Board minimaxII(Board board, int depth, bool max_player, int alpha, int beta, st
     }
 }
 
-
+/** 
+ * This function allows the agent to play with another agent
+ * users could use different minimax function to specify the
+ * evaluation function for each agent.
+ * @param initBoard means the given board in "input.txt"
+*/
 void playGame(Board initBoard) {
     int moveStep = 0;
     Board black = initBoard;

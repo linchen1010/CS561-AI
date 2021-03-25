@@ -58,6 +58,10 @@ int Board::dist(Piece p1, Piece p2) {
     return round(dist);
 }
 
+/** Evaluate function when only kings left in both sides
+ * @param color means the current play turn
+ * @return sum of distances of each kings piece
+*/
 int Board::evalSumOfDist(string &color) {
     
     int sum_of_dist = 0;
@@ -79,7 +83,6 @@ int Board::evalSumOfDist(string &color) {
     return sum_of_dist;
     
 }
-
 
 
 string Board::winner() {

@@ -11,7 +11,14 @@ using namespace std;
 
 class Clause {
     public:
-        bool isFact = true;
+        bool isFact;
         string predicate;
         vector<Argument> args; // could be variable or constant
+        void init();
 };
+
+void Clause::init() {
+    this->isFact = true;
+    this->predicate = "";
+    this->args.clear();
+}

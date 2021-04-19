@@ -14,7 +14,6 @@
 void input();
 void output();
 void checkInput();
-void testClause(string str);
 
 using namespace std;
 
@@ -31,22 +30,17 @@ vector<string> queriesKB {};
 int main() {
     input();
     // checkInput();
-    testClause("Learn(x,Ashle)");
+    KnowledgeBase kb;
+    // string str = "Start(x) & ~Ready(y) => ~play(x,y)";
+    // kb.getClause(str);
+    // kb.testClause(str);
+    for(auto str : queriesKB) {
+        kb.testClause(str);
+    }
+
     return 0;
 }
 
-void testClause(string str) {
-    Clause tmp;
-    int startPos = 0;
-    KnowledgeBase kb;
-    tmp = kb.getClause(str);
-    cout << tmp.predicate << endl;
-    for(auto arg : tmp.args) {
-        cout << arg.arg << endl;
-        if(arg.isConstant()) cout << "is constant" << endl;
-        else cout << "is variable" << endl;
-    }
-}
 
 
 void input() {

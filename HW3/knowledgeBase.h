@@ -68,6 +68,7 @@ class KnowledgeBase {
             vector<pair<int, int> > negative_sentences;
         };
         // index that helps to fetch the predicates in our kb
+	
         unordered_map<string, pos> index;
         void store(vector<Predicate> &sentence);
         vector<pair<vector<Predicate>, int> > fetch(Predicate &p);
@@ -78,12 +79,8 @@ class KnowledgeBase {
 string KnowledgeBase::CNFtoString(vector<Predicate> &sentence) {
     string s = "";
 
-    for(auto p : sentence) {
-        if(p.negative) s += "~";
-        s += p.name + ",";
-        for(auto arg : p.args) {
-            s += arg + ",";
-        }
+    for(auto &p : sentence) {
+        s += predicateToString(p);
     }
     return s;
 }
@@ -91,10 +88,11 @@ string KnowledgeBase::CNFtoString(vector<Predicate> &sentence) {
 string KnowledgeBase::predicateToString(Predicate &p) {
     string s = "";
     if(p.negative) s += "~";
-    s += p.name + ",";
+    s += p.name;
     for(auto arg : p.args) {
-        s += arg + ",";
+        s += "," + arg;
     }
+    s += " ";
     return s;
 }
 
@@ -280,7 +278,7 @@ bool KnowledgeBase::unify(vector<string> &args1, vector<string> &args2, unordere
 
 bool KnowledgeBase:: ask(string &query) {
     // constraint: asked query will be signle literal of predicate, so we could use [0]
-    int line = this->dataKB.size();
+    int line = -1;
     vector<Predicate> literal = convertToCNF(query, line);
     
     // negate the CNF, inorder to do resolution
@@ -290,24 +288,19 @@ bool KnowledgeBase:: ask(string &query) {
     // create a new kb with the input kb sentences to do resolution
     KnowledgeBase kb = this->copyKB();
     kb.store(notLiteral);
+
+
     queue<vector<Predicate>> sentence_queue;
-    
     sentence_queue.push(notLiteral);
     unordered_set<string> visited;
     int time = 0;
-    // transfer query to CNF
-    // negate CNF
-    // do bfs
-        // find resolvable sentence
-            // - need to negate the current CNF again
-            // then find the negated CNF in the KB
-            // resolve sentence in resolvable sentence
-            // substitude & unify
+
 
     while(!sentence_queue.empty()) {
+
         vector<Predicate> currentSentence = sentence_queue.front();
-        
         sentence_queue.pop();
+
         // ith predicates in the current sentence
         for(int i = 0; i < currentSentence.size(); i++) {
             Predicate resolver = currentSentence[i];
@@ -345,14 +338,15 @@ bool KnowledgeBase:: ask(string &query) {
                         if(resolved.size() == 0) return true;
 
                         string resolvedString = CNFtoString(resolved);
-                        cout << resolvedString << endl;
+                        
                         // if(time++ > 60) return false;
                         if(!visited.count(resolvedString)) {
                             kb.store(resolved);
                             sentence_queue.push(resolved);
                             visited.insert(resolvedString);
-                            // cout << resolvedString << endl;
-                        } else continue;
+                            cout << kb.dataKB.size() << endl;
+                            cout << resolvedString << endl;
+                        } 
                     }
                 }
             }

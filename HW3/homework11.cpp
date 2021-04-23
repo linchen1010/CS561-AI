@@ -35,7 +35,19 @@ int main() {
     KnowledgeBase kb;
     // string str = "Start(x) & ~Ready(y) => ~play(x,y)";
     kb.getKB(queriesKB);
-    kb.printCNF();
+    // kb.printCNF();
+    string output = "";
+    // for(int i = 0; i < queries.size(); i++) {
+    //     if(kb.ask(queries[i])) {
+    //         output += "TRUE\n";
+    //     } else {
+    //         output += "FALSE\n";
+    //     }
+    //     // cout << output << endl;
+    // }
+    if(kb.ask(queries[4])) cout << "true" << endl;
+    else cout << "false" << endl;
+    cout << output << endl;
     return 0;
 }
 

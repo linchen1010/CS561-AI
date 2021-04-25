@@ -4,8 +4,8 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 using namespace std;
 
@@ -18,6 +18,12 @@ class Predicate {
 
     void init();
     bool isLiteral();
+};
+
+struct comp {
+    bool operator()(const vector<Predicate> &a, const vector<Predicate> &b) {
+        return a.size() > b.size();
+    }
 };
 
 void Predicate::init() {
@@ -40,46 +46,49 @@ bool Predicate::isLiteral() {
 /*****************************/
 
 class KnowledgeBase {
-    public:
-        vector<vector<Predicate> > dataKB;  // contain all sentences (after transfering to CNF)
-        vector<Predicate> convertToCNF(string str, int &line);  // transfer FOL to CNF
-        void printCNF();
-        void getKB(vector<string> &sentences);
-        void tell(string &fact);
-        bool ask(string &query);
-        
-        KnowledgeBase copyKB() {
-            KnowledgeBase kb;
-            kb.dataKB = this->dataKB;
-            kb.index = this->index;
-            return kb;
-        }
+   public:
+    vector<vector<Predicate>>
+        dataKB;  // contain all sentences (after transfering to CNF)
+    vector<Predicate> convertToCNF(string str,
+                                   int &line);  // transfer FOL to CNF
+    void printCNF();
+    void getKB(vector<string> &sentences);
+    void tell(string &fact);
+    bool ask(string &query);
+
+    KnowledgeBase copyKB() {
+        KnowledgeBase kb;
+        kb.dataKB = this->dataKB;
+        kb.index = this->index;
+        return kb;
+    }
 
    private:
-        string CNFtoString(vector<Predicate> &sentence);
-        string predicateToString(Predicate &p);
-        vector<Predicate> removeDuplicate(vector<Predicate> &sentence);
+    string CNFtoString(vector<Predicate> &sentence);
+    string predicateToString(Predicate &p);
+    vector<Predicate> removeDuplicate(vector<Predicate> &sentence);
 
-        struct pos {  // entrance to our kb
-            // first: sentence entrance, second: predicate location in that sentence
-            vector<pair<int, int> > positive_literals;
-            vector<pair<int, int> > negative_literals;
-            vector<pair<int, int> > positive_sentences;
-            vector<pair<int, int> > negative_sentences;
-        };
-        // index that helps to fetch the predicates in our kb
-	
-        unordered_map<string, pos> index;
-        void store(vector<Predicate> &sentence);
-        vector<pair<vector<Predicate>, int> > fetch(Predicate &p);
-        vector<string> substitude(vector<string> &arg, unordered_map<string, string> &theta);
-        bool unify(vector<string> &args1, vector<string> &args2, unordered_map<string, string> &theta);
+    struct pos {  // entrance to our kb
+        // first: sentence entrance, second: predicate location in that sentence
+        vector<pair<int, int>> positive_literals;
+        vector<pair<int, int>> negative_literals;
+        vector<pair<int, int>> positive_sentences;
+        vector<pair<int, int>> negative_sentences;
+    };
+    // index that helps to fetch the predicates in our kb
+
+    unordered_map<string, pos> index;
+    void store(vector<Predicate> &sentence);
+    vector<pair<vector<Predicate>, int>> fetch(Predicate &p);
+    vector<string> substitude(vector<string> &arg,
+                              unordered_map<string, string> &theta);
+    bool unify(vector<string> &args1, vector<string> &args2,
+               unordered_map<string, string> &theta);
 };
 
 string KnowledgeBase::CNFtoString(vector<Predicate> &sentence) {
     string s = "";
-
-    for(auto &p : sentence) {
+    for (auto &p : sentence) {
         s += predicateToString(p);
     }
     return s;
@@ -87,9 +96,9 @@ string KnowledgeBase::CNFtoString(vector<Predicate> &sentence) {
 
 string KnowledgeBase::predicateToString(Predicate &p) {
     string s = "";
-    if(p.negative) s += "~";
+    if (p.negative) s += "~";
     s += p.name;
-    for(auto arg : p.args) {
+    for (auto arg : p.args) {
         s += "," + arg;
     }
     s += " ";
@@ -100,16 +109,15 @@ vector<Predicate> KnowledgeBase::removeDuplicate(vector<Predicate> &sentence) {
     unordered_set<string> visited;
     vector<Predicate> res;
 
-    for(int i = 0; i < sentence.size(); i++) {
+    for (int i = 0; i < sentence.size(); i++) {
         string s = predicateToString(sentence[i]);
-        if(!visited.count(s)) {
+        if (!visited.count(s)) {
             visited.insert(s);
             res.push_back(sentence[i]);
         }
     }
-    
+
     return res;
-    
 }
 /**
  * Take a string then generate the vector of Predicate of it, also standarize
@@ -163,7 +171,7 @@ void KnowledgeBase::getKB(vector<string> &sentences) {
 
 /**
  * store the given sentence (which is a vector of predicate) to the kb index
- * @param sentence 
+ * @param sentence
  */
 void KnowledgeBase::store(vector<Predicate> &sentence) {
     this->dataKB.push_back(sentence);
@@ -186,7 +194,6 @@ void KnowledgeBase::store(vector<Predicate> &sentence) {
     }
 }
 
-
 /**
  * Test kb string
  * @param str
@@ -207,44 +214,46 @@ void KnowledgeBase::printCNF() {
 }
 
 /**
- * fetch the sentences/literals and the position of given predicates p that appears in KB
+ * fetch the sentences/literals and the position of given predicates p that
+ * appears in KB
  * @param p predicate that we want to fetch in KB
- * @return vector vector of pair, which first is the sentence/literal, second is the position of predicate 
- *         that appears in that sentence/literal
- */ 
-vector<pair<vector<Predicate>, int> > KnowledgeBase::fetch(Predicate &p) {
+ * @return vector vector of pair, which first is the sentence/literal, second is
+ * the position of predicate that appears in that sentence/literal
+ */
+vector<pair<vector<Predicate>, int>> KnowledgeBase::fetch(Predicate &p) {
     // use p.name as key to find literal & sentence in index
-        // loop through all literals and sentences
-            // find the sentence that appears p and add them to ret
+    // loop through all literals and sentences
+    // find the sentence that appears p and add them to ret
 
-    vector<pair<vector<Predicate>, int> > res;
+    vector<pair<vector<Predicate>, int>> res;
     // vector that stores predicates postion as {nth sentence, pos}
-    vector<pair<int, int> > literals;
-    vector<pair<int, int> > sentences;
-    
-    if(!p.negative) {
+    vector<pair<int, int>> literals;
+    vector<pair<int, int>> sentences;
+
+    if (!p.negative) {
         literals = index[p.name].positive_literals;
         sentences = index[p.name].positive_sentences;
     } else {
         literals = index[p.name].negative_literals;
         sentences = index[p.name].negative_sentences;
     }
-    
-    for(int i = 0; i < literals.size(); i++) {
+
+    for (int i = 0; i < literals.size(); i++) {
         res.push_back({this->dataKB[literals[i].first], literals[i].second});
     }
 
-    for(int i = 0; i < sentences.size(); i++) {
+    for (int i = 0; i < sentences.size(); i++) {
         res.push_back({this->dataKB[sentences[i].first], sentences[i].second});
     }
-    
+
     return res;
 }
 
-vector<string> KnowledgeBase::substitude(vector<string> &args, unordered_map<string, string> &theta) {
-    for(int i = 0; i < args.size(); i++) {
+vector<string> KnowledgeBase::substitude(vector<string> &args,
+                                         unordered_map<string, string> &theta) {
+    for (int i = 0; i < args.size(); i++) {
         // check if argument in v could be substituded in theta
-        while(theta.count(args[i])) {
+        while (theta.count(args[i])) {
             args[i] = theta[args[i]];
         }
     }
@@ -252,21 +261,22 @@ vector<string> KnowledgeBase::substitude(vector<string> &args, unordered_map<str
 }
 
 // unify args1 with args2 and create subsitution list theta
-bool KnowledgeBase::unify(vector<string> &args1, vector<string> &args2, unordered_map<string, string> &theta) {
+bool KnowledgeBase::unify(vector<string> &args1, vector<string> &args2,
+                          unordered_map<string, string> &theta) {
     // # of arguments in two predicates is not same, can't not unify
-    if(args1.size() != args2.size()) return false;
-    
-    for(int i = 0; i < args1.size(); i++) {
-        if(args1[i] != args2[i]) {
-            if(isVariable(args1[i])) {
+    if (args1.size() != args2.size()) return false;
+
+    for (int i = 0; i < args1.size(); i++) {
+        if (args1[i] != args2[i]) {
+            if (isVariable(args1[i])) {
                 theta[args1[i]] = args2[i];
                 args1 = substitude(args1, theta);
                 args2 = substitude(args2, theta);
-            } else if(isVariable(args2[i])) {
+            } else if (isVariable(args2[i])) {
                 theta[args2[i]] = args1[i];
                 args1 = substitude(args1, theta);
                 args2 = substitude(args2, theta);
-            } else { // both constant
+            } else {  // both constant
                 return false;
             }
         }
@@ -276,11 +286,12 @@ bool KnowledgeBase::unify(vector<string> &args1, vector<string> &args2, unordere
 
 // ask
 
-bool KnowledgeBase:: ask(string &query) {
-    // constraint: asked query will be signle literal of predicate, so we could use [0]
+bool KnowledgeBase::ask(string &query) {
+    // constraint: asked query will be signle literal of predicate, so we could
+    // use [0]
     int line = -1;
     vector<Predicate> literal = convertToCNF(query, line);
-    
+    cout << CNFtoString(literal) << endl;
     // negate the CNF, inorder to do resolution
     vector<Predicate> notLiteral = literal;
     notLiteral[0].negative = !notLiteral[0].negative;
@@ -289,40 +300,47 @@ bool KnowledgeBase:: ask(string &query) {
     KnowledgeBase kb = this->copyKB();
     kb.store(notLiteral);
 
-
-    queue<vector<Predicate>> sentence_queue;
+    // queue<vector<Predicate>> sentence_queue;
+    priority_queue<vector<Predicate>, vector<vector<Predicate>>, comp>
+        sentence_queue;
     sentence_queue.push(notLiteral);
     unordered_set<string> visited;
     int time = 0;
 
-
-    while(!sentence_queue.empty()) {
-
-        vector<Predicate> currentSentence = sentence_queue.front();
+    while (!sentence_queue.empty()) {
+        
+        // vector<Predicate> currentSentence = sentence_queue.front();
+        vector<Predicate> currentSentence = sentence_queue.top();
         sentence_queue.pop();
+       
 
         // ith predicates in the current sentence
-        for(int i = 0; i < currentSentence.size(); i++) {
+        for (int i = 0; i < currentSentence.size(); i++) {
             Predicate resolver = currentSentence[i];
-            // if(resolver.negative) cout << "~";
-            // cout << resolver.name << endl;
             resolver.negative = !resolver.negative;
-            vector<pair<vector<Predicate>, int>> resolvable = kb.fetch(resolver);
+            vector<pair<vector<Predicate>, int>> resolvable =
+                kb.fetch(resolver);
             // jth predicates in the resolvable sentence
-            for(int j = 0; j < resolvable.size(); j++) {
+            for (int j = 0; j < resolvable.size(); j++) {
                 unordered_map<string, string> theta;
-                // if predicate could be unified: predicate.name same, one negated, the other not
-                if(currentSentence[i].name == resolvable[j].first[resolvable[j].second].name && currentSentence[i].negative != resolvable[j].first[resolvable[j].second].negative) {
+                // if predicate could be unified: predicate.name same, one
+                // negated, the other not
+                if (currentSentence[i].name ==
+                        resolvable[j].first[resolvable[j].second].name &&
+                    currentSentence[i].negative !=
+                        resolvable[j].first[resolvable[j].second].negative) {
                     vector<string> currentArgs = currentSentence[i].args;
-                    vector<string> resolvableArgs = resolvable[j].first[resolvable[j].second].args;
-                    // check each argument in two sentences to see if they could be unified
-                    if(unify(currentArgs, resolvableArgs, theta)) {
+                    vector<string> resolvableArgs =
+                        resolvable[j].first[resolvable[j].second].args;
+                    // check each argument in two sentences to see if they could
+                    // be unified
+                    if (unify(currentArgs, resolvableArgs, theta)) {
                         vector<Predicate> s1 = currentSentence;
                         vector<Predicate> s2 = resolvable[j].first;
-                        for(int n = 0; n < s1.size(); n++) {
+                        for (int n = 0; n < s1.size(); n++) {
                             s1[n].args = substitude(s1[n].args, theta);
                         }
-                        for(int n = 0; n < s2.size(); n++) {
+                        for (int n = 0; n < s2.size(); n++) {
                             s2[n].args = substitude(s2[n].args, theta);
                         }
                         // remove the resolved predicates
@@ -332,30 +350,22 @@ bool KnowledgeBase:: ask(string &query) {
                         vector<Predicate> resolved;
                         resolved.insert(resolved.end(), s1.begin(), s1.end());
                         resolved.insert(resolved.end(), s2.begin(), s2.end());
-                        
+
                         resolved = kb.removeDuplicate(resolved);
                         // resolved = empty set, return true
-                        if(resolved.size() == 0) return true;
+                        if (resolved.size() == 0) return true;
 
                         string resolvedString = CNFtoString(resolved);
-                        
-                        // if(time++ > 60) return false;
-                        if(!visited.count(resolvedString)) {
+
+                        if (!visited.count(resolvedString)) {
                             kb.store(resolved);
                             sentence_queue.push(resolved);
                             visited.insert(resolvedString);
-                            cout << kb.dataKB.size() << endl;
-                            cout << resolvedString << endl;
-                        } 
+                        }
                     }
                 }
             }
         }
-
-        
     }
     return false;
 }
-
-
-

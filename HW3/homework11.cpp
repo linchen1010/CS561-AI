@@ -26,6 +26,7 @@ int numQuery;
 int numKB;
 vector<string> queries{};
 vector<string> queriesKB{};
+string outString;
 
 /////////////////////////////
 
@@ -36,18 +37,17 @@ int main() {
     // string str = "Start(x) & ~Ready(y) => ~play(x,y)";
     kb.getKB(queriesKB);
     // kb.printCNF();
-    string output = "";
-    // for(int i = 0; i < queries.size(); i++) {
-    //     if(kb.ask(queries[i])) {
-    //         output += "TRUE\n";
-    //     } else {
-    //         output += "FALSE\n";
-    //     }
-    //     // cout << output << endl;
-    // }
-    if(kb.ask(queries[4])) cout << "true" << endl;
-    else cout << "false" << endl;
-    cout << output << endl;
+    for(int i = 0; i < queries.size(); i++) {
+        if(kb.ask(queries[i])) {
+            outString += "TRUE\n";
+        } else {
+            outString += "FALSE\n";
+        }
+        // cout << output << endl;
+    }
+    // if (kb.ask(queries[1]))
+    // cout << outString << endl;
+    output();
     return 0;
 }
 
@@ -70,7 +70,11 @@ void input() {
     ifile.close();
 }
 
-void output() {}
+void output() {
+    ofile.open("output.txt");
+    ofile << outString;
+    ofile.close();
+}
 
 void checkInput() {
     cout << "Query: " << numQuery << endl;

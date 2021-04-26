@@ -32,21 +32,19 @@ string outString;
 
 int main() {
     input();
-    // checkInput();
+
     KnowledgeBase kb;
-    // string str = "Start(x) & ~Ready(y) => ~play(x,y)";
+
     kb.getKB(queriesKB);
-    // kb.printCNF();
-    for(int i = 0; i < queries.size(); i++) {
-        if(kb.resolution(queries[i])) {
+
+    for (int i = 0; i < queries.size(); i++) {
+        if (kb.resolution(queries[i])) {
             outString += "TRUE\n";
         } else {
             outString += "FALSE\n";
         }
-        // cout << output << endl;
     }
-    // if (kb.ask(queries[1]))
-    // cout << outString << endl;
+
     output();
     return 0;
 }

@@ -38,7 +38,7 @@ int main() {
     kb.getKB(queriesKB);
     // kb.printCNF();
     for(int i = 0; i < queries.size(); i++) {
-        if(kb.ask(queries[i])) {
+        if(kb.resolution(queries[i])) {
             outString += "TRUE\n";
         } else {
             outString += "FALSE\n";

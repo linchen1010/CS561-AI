@@ -32,13 +32,11 @@ void Predicate::init() {
     this->args.clear();
 }
 
-bool isVariable(const string &arg) { return islower(arg[0]); }
+bool isVariable(const string &arg) { return arg[0] >= 'a' && arg[0] <= 'z'; }
 
 bool Predicate::isLiteral() {
     for (int i = 0; i < this->args.size(); i++) {
-        if (isVariable(this->args[i])) {
-            return false;
-        }
+        if (isVariable(this->args[i])) return false;
     }
     return true;
 }
@@ -53,13 +51,12 @@ class KnowledgeBase {
                                    int &line);  // transfer FOL to CNF
     void printCNF();
     void getKB(vector<string> &sentences);
-    void tell(string &fact);
-    bool ask(string &query);
+    bool resolution(string &query);
 
     KnowledgeBase copyKB() {
         KnowledgeBase kb;
         kb.dataKB = this->dataKB;
-        kb.index = this->index;
+        kb.predicateIndex = this->predicateIndex;
         return kb;
     }
 
@@ -77,9 +74,9 @@ class KnowledgeBase {
     };
     // index that helps to fetch the predicates in our kb
 
-    unordered_map<string, pos> index;
-    void store(vector<Predicate> &sentence);
-    vector<pair<vector<Predicate>, int>> fetch(Predicate &p);
+    unordered_map<string, pos> predicateIndex;
+    void storeToKB(vector<Predicate> &sentence);
+    vector<pair<vector<Predicate>, int>> getPredicateEntrance(Predicate &p);
     vector<string> substitude(vector<string> &arg,
                               unordered_map<string, string> &theta);
     bool unify(vector<string> &args1, vector<string> &args2,
@@ -165,7 +162,7 @@ vector<Predicate> KnowledgeBase::convertToCNF(string str, int &line) {
 void KnowledgeBase::getKB(vector<string> &sentences) {
     for (int i = 0; i < sentences.size(); i++) {
         vector<Predicate> sentence = convertToCNF(sentences[i], i);
-        this->store(sentence);
+        this->storeToKB(sentence);
     }
 }
 
@@ -173,22 +170,26 @@ void KnowledgeBase::getKB(vector<string> &sentences) {
  * store the given sentence (which is a vector of predicate) to the kb index
  * @param sentence
  */
-void KnowledgeBase::store(vector<Predicate> &sentence) {
+void KnowledgeBase::storeToKB(vector<Predicate> &sentence) {
     this->dataKB.push_back(sentence);
-    int ent = this->dataKB.size() - 1;
+    int nthSentence = this->dataKB.size() - 1;
     for (int i = 0; i < sentence.size(); i++) {
         // cout << sentence[i].name << " " << ent << " " << i << endl;
         if (sentence[i].isLiteral()) {
             if (!sentence[i].negative) {
-                index[sentence[i].name].positive_literals.push_back({ent, i});
+                predicateIndex[sentence[i].name].positive_literals.push_back(
+                    {nthSentence, i});
             } else {
-                index[sentence[i].name].negative_literals.push_back({ent, i});
+                predicateIndex[sentence[i].name].negative_literals.push_back(
+                    {nthSentence, i});
             }
         } else {  // not literal
             if (!sentence[i].negative) {
-                index[sentence[i].name].positive_sentences.push_back({ent, i});
+                predicateIndex[sentence[i].name].positive_sentences.push_back(
+                    {nthSentence, i});
             } else {
-                index[sentence[i].name].negative_sentences.push_back({ent, i});
+                predicateIndex[sentence[i].name].negative_sentences.push_back(
+                    {nthSentence, i});
             }
         }
     }
@@ -220,7 +221,8 @@ void KnowledgeBase::printCNF() {
  * @return vector vector of pair, which first is the sentence/literal, second is
  * the position of predicate that appears in that sentence/literal
  */
-vector<pair<vector<Predicate>, int>> KnowledgeBase::fetch(Predicate &p) {
+vector<pair<vector<Predicate>, int>> KnowledgeBase::getPredicateEntrance(
+    Predicate &p) {
     // use p.name as key to find literal & sentence in index
     // loop through all literals and sentences
     // find the sentence that appears p and add them to ret
@@ -231,11 +233,11 @@ vector<pair<vector<Predicate>, int>> KnowledgeBase::fetch(Predicate &p) {
     vector<pair<int, int>> sentences;
 
     if (!p.negative) {
-        literals = index[p.name].positive_literals;
-        sentences = index[p.name].positive_sentences;
+        literals = predicateIndex[p.name].positive_literals;
+        sentences = predicateIndex[p.name].positive_sentences;
     } else {
-        literals = index[p.name].negative_literals;
-        sentences = index[p.name].negative_sentences;
+        literals = predicateIndex[p.name].negative_literals;
+        sentences = predicateIndex[p.name].negative_sentences;
     }
 
     for (int i = 0; i < literals.size(); i++) {
@@ -284,21 +286,21 @@ bool KnowledgeBase::unify(vector<string> &args1, vector<string> &args2,
     return true;
 }
 
-// ask
+// resolution
 
-bool KnowledgeBase::ask(string &query) {
+bool KnowledgeBase::resolution(string &query) {
     // constraint: asked query will be signle literal of predicate, so we could
     // use [0]
     int line = -1;
     vector<Predicate> literal = convertToCNF(query, line);
-    cout << CNFtoString(literal) << endl;
+    // cout << CNFtoString(literal) << endl;
     // negate the CNF, inorder to do resolution
     vector<Predicate> notLiteral = literal;
     notLiteral[0].negative = !notLiteral[0].negative;
 
     // create a new kb with the input kb sentences to do resolution
     KnowledgeBase kb = this->copyKB();
-    kb.store(notLiteral);
+    kb.storeToKB(notLiteral);
 
     // queue<vector<Predicate>> sentence_queue;
     priority_queue<vector<Predicate>, vector<vector<Predicate>>, comp>
@@ -308,34 +310,35 @@ bool KnowledgeBase::ask(string &query) {
     int time = 0;
 
     while (!sentence_queue.empty()) {
-        
-        // vector<Predicate> currentSentence = sentence_queue.front();
-        vector<Predicate> currentSentence = sentence_queue.top();
+        // cout << time++ << endl;
+        if (time++ > 8000)
+            return false;  // terminate when query could not be resolved
+        // vector<Predicate> curSentence = sentence_queue.front();
+        vector<Predicate> curSentence = sentence_queue.top();
         sentence_queue.pop();
-       
 
         // ith predicates in the current sentence
-        for (int i = 0; i < currentSentence.size(); i++) {
-            Predicate resolver = currentSentence[i];
+        for (int i = 0; i < curSentence.size(); i++) {
+            Predicate resolver = curSentence[i];
             resolver.negative = !resolver.negative;
             vector<pair<vector<Predicate>, int>> resolvable =
-                kb.fetch(resolver);
+                kb.getPredicateEntrance(resolver);
             // jth predicates in the resolvable sentence
             for (int j = 0; j < resolvable.size(); j++) {
                 unordered_map<string, string> theta;
                 // if predicate could be unified: predicate.name same, one
                 // negated, the other not
-                if (currentSentence[i].name ==
+                if (curSentence[i].name ==
                         resolvable[j].first[resolvable[j].second].name &&
-                    currentSentence[i].negative !=
+                    curSentence[i].negative !=
                         resolvable[j].first[resolvable[j].second].negative) {
-                    vector<string> currentArgs = currentSentence[i].args;
+                    vector<string> currentArgs = curSentence[i].args;
                     vector<string> resolvableArgs =
                         resolvable[j].first[resolvable[j].second].args;
                     // check each argument in two sentences to see if they could
                     // be unified
                     if (unify(currentArgs, resolvableArgs, theta)) {
-                        vector<Predicate> s1 = currentSentence;
+                        vector<Predicate> s1 = curSentence;
                         vector<Predicate> s2 = resolvable[j].first;
                         for (int n = 0; n < s1.size(); n++) {
                             s1[n].args = substitude(s1[n].args, theta);
@@ -346,19 +349,21 @@ bool KnowledgeBase::ask(string &query) {
                         // remove the resolved predicates
                         s1.erase(s1.begin() + i);
                         s2.erase(s2.begin() + resolvable[j].second);
-
+                        // merge the resolved sentences
                         vector<Predicate> resolved;
                         resolved.insert(resolved.end(), s1.begin(), s1.end());
                         resolved.insert(resolved.end(), s2.begin(), s2.end());
 
+                        // remove same predicates in resolved sentence
                         resolved = kb.removeDuplicate(resolved);
                         // resolved = empty set, return true
+
                         if (resolved.size() == 0) return true;
 
                         string resolvedString = CNFtoString(resolved);
 
                         if (!visited.count(resolvedString)) {
-                            kb.store(resolved);
+                            kb.storeToKB(resolved);
                             sentence_queue.push(resolved);
                             visited.insert(resolvedString);
                         }

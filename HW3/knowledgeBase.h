@@ -64,7 +64,8 @@ class KnowledgeBase {
     string CNFtoString(vector<Predicate> &sentence);
     string predicateToString(Predicate &p);
     vector<Predicate> removeDuplicate(vector<Predicate> &sentence);
-
+    bool sameAmountOfArgs(vector<string> &args1, vector<string> &args2);
+    bool forwardChaining(string &query);
     struct pos {  // entrance to our kb
         // first: sentence entrance, second: predicate location in that sentence
         vector<pair<int, int>> positive_literals;
@@ -262,12 +263,22 @@ vector<string> KnowledgeBase::substitude(vector<string> &args,
     return args;
 }
 
-// unify args1 with args2 and create subsitution list theta
+bool KnowledgeBase::sameAmountOfArgs(vector<string> &args1,
+                                     vector<string> &args2) {
+    if (args1.size() == args2.size())
+        return true;
+    else
+        return false;
+}
+
+/**
+ * unify args1 with args2 and create subsitution list theta
+ * @param args1 arguments of 1st predicates
+ * @param args2 arguments of 2nd predicates
+ * @param theta subsitution list
+ */
 bool KnowledgeBase::unify(vector<string> &args1, vector<string> &args2,
                           unordered_map<string, string> &theta) {
-    // # of arguments in two predicates is not same, can't not unify
-    if (args1.size() != args2.size()) return false;
-
     for (int i = 0; i < args1.size(); i++) {
         if (args1[i] != args2[i]) {
             if (isVariable(args1[i])) {
@@ -286,14 +297,20 @@ bool KnowledgeBase::unify(vector<string> &args1, vector<string> &args2,
     return true;
 }
 
-// resolution
-
 bool KnowledgeBase::resolution(string &query) {
-    // constraint: asked query will be signle literal of predicate, so we could
-    // use [0]
+    if (forwardChaining(query) == true) return true;
+    return false;
+}
+
+/**
+ * Do forward chaining on given query
+ * @param query user defined query
+ * @return true if query could resolved in our KB
+ */
+bool KnowledgeBase::forwardChaining(string &query) {
     int line = -1;
     vector<Predicate> literal = convertToCNF(query, line);
-    // cout << CNFtoString(literal) << endl;
+
     // negate the CNF, inorder to do resolution
     vector<Predicate> notLiteral = literal;
     notLiteral[0].negative = !notLiteral[0].negative;
@@ -302,7 +319,6 @@ bool KnowledgeBase::resolution(string &query) {
     KnowledgeBase kb = this->copyKB();
     kb.storeToKB(notLiteral);
 
-    // queue<vector<Predicate>> sentence_queue;
     priority_queue<vector<Predicate>, vector<vector<Predicate>>, comp>
         sentence_queue;
     sentence_queue.push(notLiteral);
@@ -310,10 +326,9 @@ bool KnowledgeBase::resolution(string &query) {
     int time = 0;
 
     while (!sentence_queue.empty()) {
-        // cout << time++ << endl;
         if (time++ > 8000)
             return false;  // terminate when query could not be resolved
-        // vector<Predicate> curSentence = sentence_queue.front();
+
         vector<Predicate> curSentence = sentence_queue.top();
         sentence_queue.pop();
 
@@ -337,6 +352,8 @@ bool KnowledgeBase::resolution(string &query) {
                         resolvable[j].first[resolvable[j].second].args;
                     // check each argument in two sentences to see if they could
                     // be unified
+                    if (!sameAmountOfArgs(currentArgs, resolvableArgs))
+                        continue;
                     if (unify(currentArgs, resolvableArgs, theta)) {
                         vector<Predicate> s1 = curSentence;
                         vector<Predicate> s2 = resolvable[j].first;
@@ -351,13 +368,14 @@ bool KnowledgeBase::resolution(string &query) {
                         s2.erase(s2.begin() + resolvable[j].second);
                         // merge the resolved sentences
                         vector<Predicate> resolved;
+                        resolved.reserve(s1.size() + s2.size());
                         resolved.insert(resolved.end(), s1.begin(), s1.end());
                         resolved.insert(resolved.end(), s2.begin(), s2.end());
 
                         // remove same predicates in resolved sentence
                         resolved = kb.removeDuplicate(resolved);
-                        // resolved = empty set, return true
 
+                        // resolved = empty set, return true
                         if (resolved.size() == 0) return true;
 
                         string resolvedString = CNFtoString(resolved);

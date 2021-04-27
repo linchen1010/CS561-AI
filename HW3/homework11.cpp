@@ -32,7 +32,6 @@ string outString;
 
 int main() {
     input();
-
     KnowledgeBase kb;
 
     kb.getKB(queriesKB);

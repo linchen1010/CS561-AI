@@ -63,6 +63,7 @@ class KnowledgeBase {
    private:
     string CNFtoString(vector<Predicate> &sentence);
     string predicateToString(Predicate &p);
+    string predicateToString_ignore_negative(Predicate &p);
     vector<Predicate> removeDuplicate(vector<Predicate> &sentence);
     bool sameAmountOfArgs(vector<string> &args1, vector<string> &args2);
     bool forwardChaining(string &query);
@@ -103,16 +104,40 @@ string KnowledgeBase::predicateToString(Predicate &p) {
     return s;
 }
 
+string KnowledgeBase::predicateToString_ignore_negative(Predicate &p) {
+    string s = "";
+    s += p.name;
+    for (auto arg : p.args) {
+        s += "," + arg;
+    }
+    s += " ";
+    return s;
+}
+
 vector<Predicate> KnowledgeBase::removeDuplicate(vector<Predicate> &sentence) {
     unordered_set<string> visited;
-    vector<Predicate> res;
+    vector<Predicate> tmp;
 
+    // remove same predicate in a setence like A(x) A(x) B(x) needed to be A(x) B(x)
     for (int i = 0; i < sentence.size(); i++) {
         string s = predicateToString(sentence[i]);
         if (!visited.count(s)) {
             visited.insert(s);
-            res.push_back(sentence[i]);
+            tmp.push_back(sentence[i]);
         }
+    }
+    unordered_map<string, int> predicateCount;
+    vector<Predicate> res;
+
+    // follow loop handle the same predicate but with different negative like A(x) -A(x) B(x) -- B(x)
+    for(int i = 0; i < tmp.size(); i++) {
+        string s = predicateToString_ignore_negative(tmp[i]);
+        predicateCount[s]++;
+    }
+
+    for(int i = 0; i < tmp.size(); i++) {
+        string s = predicateToString_ignore_negative(tmp[i]);
+        if(predicateCount[s] == 1) res.push_back(tmp[i]);
     }
 
     return res;
@@ -328,7 +353,7 @@ bool KnowledgeBase::forwardChaining(string &query) {
     while (!sentence_queue.empty()) {
         if (time++ > 8000)
             return false;  // terminate when query could not be resolved
-
+        // cout << time << endl;
         vector<Predicate> curSentence = sentence_queue.top();
         sentence_queue.pop();
 

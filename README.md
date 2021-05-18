@@ -6,7 +6,7 @@
 (2) Uniform Cost Search
 (3) A* Serach 
 
-## HW2 -- Checker Playing Agent
+## HW2 -- Checkers Playing Agent
 ### Determine the next move for a player in a Checker game using Minimax and Alpha-Beta pruning algorithms with proper evaluation functions
 
 (1) Minimax Algorithm
